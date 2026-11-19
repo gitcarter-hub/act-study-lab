@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ACT Study Lab</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--ink:#16202e;--mute:#5d6b7d;--line:#e2e6ec;--acc:#1f5eff;--acc2:#e8efff;--ok:#12805c;--okbg:#e5f6ef;--bad:#c4321f;--badbg:#fdecea;--warn:#a15c00}
+@media (prefers-color-scheme:dark){:root{--bg:#0f141b;--card:#18202b;--ink:#e8edf3;--mute:#9aa8b8;--line:#2a3441;--acc:#6f9bff;--acc2:#1d2a44;--ok:#4cc79a;--okbg:#14302a;--bad:#ff7a66;--badbg:#3a1f1c;--warn:#f0b057}}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:76px}
+header{padding:16px 16px 4px;max-width:720px;margin:0 auto;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+h1{font-size:22px;margin:0;letter-spacing:-.01em}
+h2{font-size:18px;margin:0 0 8px}
+h3{font-size:15px;margin:14px 0 6px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}
+#saveNote{font-size:12px;color:var(--mute)}
+main{max-width:720px;margin:0 auto;padding:8px 12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:10px 0}
+.mute{color:var(--mute);font-size:14px}
+.small{font-size:13px}
+nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+nav button{flex:1;max-width:180px;background:none;border:0;color:var(--mute);font:600 13px/1.2 inherit;padding:8px 4px;border-radius:10px;cursor:pointer}
+nav button.on{color:var(--acc);background:var(--acc2)}
+button.btn{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:12px 16px;font:600 15px inherit;cursor:pointer;width:100%}
+button.btn.ghost{background:var(--acc2);color:var(--acc)}
+button.btn:disabled{opacity:.5;cursor:default}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:7px 13px;font:500 14px inherit;cursor:pointer}
+.chip.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.bar{height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin:4px 0 10px}
+.bar>i{display:block;height:100%;background:var(--acc);border-radius:6px}
+.topic{padding:6px 0}
+.topic .row span:last-child{font-size:13px;color:var(--mute);white-space:nowrap}
+.pri{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line)}
+.pri:last-child{border:0}
+.num{flex:none;width:26px;height:26px;border-radius:50%;background:var(--acc2);color:var(--acc);font-weight:700;display:grid;place-items:center;font-size:13px}
+.passage{background:var(--bg);border-radius:10px;padding:4px 14px;font-size:15px;max-height:46vh;overflow:auto;border:1px solid var(--line)}
+.passage table{border-collapse:collapse;margin:8px 0;font-size:14px}
+.passage td,.passage th{border:1px solid var(--line);padding:4px 8px;text-align:center}
+details summary{cursor:pointer;color:var(--acc);font-weight:600;font-size:14px;margin-bottom:6px}
+.q{font-size:17px;margin:12px 0}
+u{text-decoration-thickness:2px;text-underline-offset:3px}
+.choice{display:flex;gap:10px;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1.5px solid var(--line);border-radius:12px;padding:12px;margin:7px 0;font:16px/1.4 inherit;cursor:pointer}
+.choice b{flex:none;width:24px}
+.choice.ok{border-color:var(--ok);background:var(--okbg)}
+.choice.bad{border-color:var(--bad);background:var(--badbg)}
+.choice:disabled{cursor:default}
+.expl{border-left:3px solid var(--acc);padding:6px 12px;margin:12px 0;background:var(--acc2);border-radius:0 10px 10px 0;font-size:15px}
+.tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:var(--acc2);color:var(--acc);font-weight:600}
+.timer{font-variant-numeric:tabular-nums;font-weight:700}
+.timer.late{color:var(--bad)}
+label{display:block;font-size:14px;font-weight:600;margin:10px 0 4px}
+input,select,textarea{width:100%;font:15px inherit;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
+textarea{min-height:70px;resize:vertical}
+.choiceIn{display:flex;gap:8px;align-items:center;margin:6px 0}
+.choiceIn input[type=radio]{width:auto;flex:none}
+.big{font-size:40px;font-weight:800;letter-spacing:-.02em}
+table.grid{border-collapse:collapse;width:100%;font-size:13px}
+table.grid td,table.grid th{border-bottom:1px solid var(--line);padding:5px 4px;text-align:right}
+table.grid td:first-child,table.grid th:first-child{text-align:left}
+.notice{font-size:13px;color:var(--warn);margin:6px 0}
+.err{color:var(--bad);font-size:14px;margin-top:8px}
+.okmsg{color:var(--ok);font-size:14px;margin-top:8px}
+.linkbtn{background:none;border:0;color:var(--acc);font:600 14px inherit;cursor:pointer;padding:4px 0}
+.linkbtn.danger{color:var(--bad)}
+.qitem{padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.coins{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(180deg,#fff4c2,#ffe07a);color:#6b4a00;border:1px solid #e9b934;border-radius:999px;padding:3px 10px 3px 4px;font-weight:800;font-size:14px;font-variant-numeric:tabular-nums;position:relative}
+.coin{width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff6c9 0,#ffd23f 35%,#d99a00 100%);border:1.5px solid #b07a00;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35);flex:none;display:grid;place-items:center;font-size:11px;color:#8a5c00;font-weight:900}
+.coins.bump{animation:bump .5s ease}
+@keyframes bump{30%{transform:scale(1.18)}100%{transform:scale(1)}}
+.pop{position:absolute;right:6px;top:-4px;color:#c98a00;font-weight:900;font-size:15px;animation:pop 1.1s ease-out forwards;pointer-events:none;white-space:nowrap}
+@keyframes pop{0%{opacity:0;transform:translateY(6px)}20%{opacity:1}100%{opacity:0;transform:translateY(-26px)}}
+.hdr{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.coinline{display:flex;align-items:center;gap:8px;margin-top:8px;font-weight:700;color:#b07a00}
+.stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stats3 div{background:var(--bg);border-radius:10px;padding:10px 4px}
+.stats3 b{display:block;font-size:22px}
+.lvl{font-weight:700;font-size:12px;padding:1px 7px;border-radius:999px}
+.lvl-easy{color:var(--ok);background:var(--okbg)}
+.lvl-medium{color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent)}
+.lvl-hard{color:var(--bad);background:var(--badbg)}
+.day{display:inline-flex;align-items:center;gap:3px;background:linear-gradient(180deg,#ffe3d1,#ffb48a);color:#7a2e00;border:1px solid #f08a4b;border-radius:999px;padding:3px 10px 3px 7px;font-weight:800;font-size:14px;font-variant-numeric:tabular-nums}
+.day.off{filter:grayscale(1);opacity:.6}
+.daycard{display:flex;align-items:center;gap:14px}
+.daycard .flame{font-size:44px;line-height:1}
+.week{display:flex;gap:6px;margin-top:10px}
+.week span{flex:1;text-align:center;font-size:11px;color:var(--mute)}
+.week i{display:block;height:28px;border-radius:8px;background:var(--line);margin-bottom:3px;font-style:normal;line-height:28px;font-size:14px}
+.week i.on{background:linear-gradient(180deg,#ffb48a,#f0703b)}
+.ava{width:32px;height:32px;border-radius:50%;display:inline-grid;place-items:center;background:var(--card);font-size:19px;flex:none;border:3px solid transparent;line-height:1}
+.ava.lg{width:64px;height:64px;font-size:38px;border-width:4px}
+.f-none{border-color:var(--line)}
+.f-silver{border-color:#b9c2cc}
+.f-gold{border-color:#e9b934}
+.f-emerald{border-color:#1fae73}
+.f-rainbow{background:linear-gradient(var(--card),var(--card)) padding-box,conic-gradient(#ff4d4d,#ffa31a,#ffe14d,#3ccf6e,#3d8bff,#a05cff,#ff4d4d) border-box}
+.me{display:flex;align-items:center;gap:8px}
+.shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.item{border:1.5px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px;background:var(--card)}
+.item.active{border-color:var(--acc)}
+.item .nm{font-weight:700;font-size:14px}
+.sw{height:34px;border-radius:8px;display:flex;overflow:hidden}
+.sw i{flex:1}
+.ibtn{border:0;border-radius:8px;padding:8px;font:700 13px inherit;cursor:pointer;background:var(--acc);color:#fff}
+.ibtn.own{background:var(--acc2);color:var(--acc)}
+.ibtn:disabled{opacity:.55;cursor:default}
+.ibtn.cur{background:none;color:var(--ok);border:1px solid var(--ok)}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.badge{text-align:center;padding:10px 6px;border-radius:12px;background:var(--bg);font-size:12px;line-height:1.3}
+.badge .ic{font-size:30px;display:block;margin-bottom:4px}
+.badge.locked{opacity:.45;filter:grayscale(1)}
+.badge b{display:block;font-size:13px}
+#toast{position:fixed;left:50%;top:14px;transform:translateX(-50%) translateY(-120%);background:var(--card);border:1px solid #e9b934;box-shadow:0 8px 30px rgba(0,0,0,.18);border-radius:14px;padding:10px 16px;display:flex;align-items:center;gap:10px;z-index:9;transition:transform .35s ease;max-width:92vw}
+#toast.show{transform:translateX(-50%) translateY(0)}
+#toast .ic{font-size:30px}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+@media (prefers-reduced-motion:reduce){.coins.bump,.pop{animation:none}.pop{display:none}}
+</style>
+</head>
+<body>
+<header><h1>ACT Study Lab</h1><div class="hdr"><div class="me"><span id="hAva" class="ava f-none">🦉</span><span class="day" id="day" title="Days in a row"><span>🔥</span><span id="dayN">0</span></span><span class="coins" id="coins" aria-live="polite"><span class="coin">$</span><span id="coinN">0</span></span></div><span id="saveNote">Loading…</span></div></header>
+<div id="toast" role="status" aria-live="polite"></div>
+<main id="view"></main>
+<nav id="tabs">
+  <button data-tab="plan" class="on">Plan</button>
+  <button data-tab="practice">Practice</button>
+  <button data-tab="add">Add</button>
+  <button data-tab="store">Store</button>
+  <button data-tab="progress">Progress</button>
+</nav>
+<script>
+"use strict";
+/* ---------- Blueprint: what the enhanced ACT tends to test ----------
+   English percentages follow ACT's published reporting-category ranges
+   (Production of Writing 38-43%, Knowledge of Language 18-23%,
+   Conventions 38-43%). Subtopic splits and the Math/Reading/Science
+   splits are estimates from prep-company frequency analyses. */
+const BP = {
+  english:{name:"English",count:50,sec:42,topics:[
+    ["punct","Punctuation (commas, semicolons, colons, apostrophes)",18,"Conventions"],
+    ["sent","Sentence structure (run-ons, fragments, splices)",10,"Conventions"],
+    ["usage","Usage (agreement, verb tense, pronouns)",12,"Conventions"],
+    ["trans","Transitions & logic",12,"Production of Writing"],
+    ["adddel","Add / delete / relevance",14,"Production of Writing"],
+    ["org","Organization & sentence placement",7,"Production of Writing"],
+    ["purpose","Writer's purpose & main idea",7,"Production of Writing"],
+    ["concise","Concision & redundancy",10,"Knowledge of Language"],
+    ["word","Word choice & tone",10,"Knowledge of Language"]]},
+  math:{name:"Math",count:45,sec:67,topics:[
+    ["ies","Essential skills (percents, rates, ratios, word problems)",28],
+    ["alg","Algebra (equations, inequalities, systems)",15],
+    ["func","Functions (graphs, quadratics, exponentials)",15],
+    ["geo","Geometry (area, triangles, circles, coordinates)",14],
+    ["stat","Statistics & probability",12],
+    ["num","Number & quantity (exponents, fractions)",10],
+    ["trig","Trigonometry",6]]},
+  reading:{name:"Reading",count:36,sec:67,topics:[
+    ["infer","Inference",25],
+    ["integ","Comparing passages & integrating ideas",20],
+    ["main","Main idea & summary",15],
+    ["detail","Supporting details",15],
+    ["craft","Purpose, point of view & structure",15],
+    ["vocab","Words in context",10]]},
+  science:{name:"Science",count:40,sec:60,topics:[
+    ["data","Interpreting data (graphs & tables)",45],
+    ["models","Evaluating models & viewpoints",30],
+    ["design","Experimental design",25]]}
+};
+const SECS = Object.keys(BP);
+const topicName = (s,t)=> (BP[s].topics.find(x=>x[0]===t)||[t,t])[1];
+
+/* ---------- Built-in original questions ---------- */
+const PASS = {
+lib:`The Millbrook Public Library opened in 1912 in a single room above the post office. Its first collection was 300 donated books, most of them almanacs and farming manuals.
+
+By 1950, the collection had outgrown the space. Residents held bake sales, car washes, and a town-wide auction, and within three years they had raised enough money for a separate brick building on Main Street. That building still serves the town today.`,
+bees:`On the roofs of a dozen office buildings downtown, honeybee hives now sit beside air-conditioning units. The city's rooftop beekeeping program began six years ago with two hives and a single volunteer, Rosa Delgado, a retired chemistry teacher who had kept bees on her family's farm as a child. Delgado assumed the project would last a season or two. Instead, building managers began calling her, asking whether their roofs could host hives as well.
+
+Supporters point out that city bees often thrive. Parks, street trees, and balcony gardens bloom at different times, giving bees a steady supply of nectar from early spring to late fall. Some rural areas, by contrast, are planted with a single crop that flowers for only a few weeks.
+
+Not everyone is convinced the program helps. Dr. Aaron Pike, an entomologist at the state university, notes that honeybees are not native to North America and may compete with wild bee species for the same flowers. "Adding honeybees is a bit like opening a new restaurant in a neighborhood that already has plenty," he said. "If there isn't enough food to go around, someone goes hungry." Pike argues that cities would do more for pollinators by planting native flowers than by adding hives.
+
+Delgado does not dismiss the concern. This year, the program began requiring every building that hosts a hive to plant native wildflowers in nearby planters. "The bees got people's attention," she said. "Now we can use that attention to help all pollinators, not just ours."`,
+seeds:`Students studied how temperature affects the germination of radish seeds. For each temperature, 50 seeds were placed on damp paper towels in a sealed container kept in the dark. After 5 days, the students counted how many seeds had sprouted.
+
+Temperature (°C) | Seeds germinated (%)
+10 | 12
+15 | 46
+20 | 78
+25 | 90
+30 | 84
+35 | 40`
+};
+const BUILTIN = [
+ {id:"b-e1",s:"english",t:"punct",q:"The museum's newest exhibit [[features three artists, each of whom]] works with recycled materials.",c:["NO CHANGE","features three artists; each of whom","features, three artists each of whom","features three artists each, of whom"],a:0,x:"The comma correctly sets off the nonessential phrase \"each of whom works…\". A semicolon (B) needs a complete sentence on both sides, and C and D put commas where no pause belongs."},
+ {id:"b-e2",s:"english",t:"sent",q:"Maya had practiced the piece for weeks, [[she still felt]] nervous before the recital.",c:["NO CHANGE","but she still felt","she, still, felt","and she, still felt"],a:1,x:"Two complete sentences joined by only a comma is a comma splice. Adding the conjunction \"but\" fixes it and shows the contrast."},
+ {id:"b-e3",s:"english",t:"punct",q:"All twenty of the [[students' projects]] were displayed in the hallway for parents to see.",c:["NO CHANGE","student's projects","students projects","students projects'"],a:0,x:"The projects belong to many students, so the plural possessive \"students'\" is correct."},
+ {id:"b-e4",s:"english",t:"usage",q:"The collection of rare coins [[are]] stored in a climate-controlled vault.",c:["NO CHANGE","were","is","have been"],a:2,x:"The subject is \"collection\" (singular), not \"coins.\" Ignore the prepositional phrase: the collection is stored."},
+ {id:"b-e5",s:"english",t:"usage",q:"Last summer, the town [[builds]] a new skate park near the library.",c:["NO CHANGE","will build","built","is building"],a:2,x:"\"Last summer\" signals the past, so the past tense \"built\" is needed."},
+ {id:"b-e6",s:"english",t:"trans",q:"The trail is steep and rocky. [[Therefore,]] thousands of hikers complete it every year.",c:["NO CHANGE","Nevertheless,","Similarly,","For example,"],a:1,x:"The second sentence contrasts with the first (hard trail, yet many finish), so a contrast transition like \"Nevertheless\" fits."},
+ {id:"b-e7",s:"english",t:"concise",q:"Because of the storm, the meeting was postponed [[until a later time in the future]].",c:["NO CHANGE","until later in the future","to a future time later on","until later"],a:3,x:"\"Later\" already means \"in the future.\" The ACT rewards the shortest choice that keeps the meaning and is grammatical."},
+ {id:"b-e8",s:"english",t:"adddel",p:"lib",q:"The writer is considering adding the following sentence after the first paragraph:\n\"My cousin prefers e-books to printed books.\"\nShould the writer make this addition?",c:["Yes, because it shows how libraries have changed over time.","Yes, because it adds a personal detail that engages the reader.","No, because it is unrelated to the history of the Millbrook library.","No, because it contradicts the claim that the library had 300 books."],a:2,x:"The essay is about the library's history. A cousin's reading preference is off-topic, and the reason in C says exactly why."},
+ {id:"b-e9",s:"english",t:"word",q:"The scientist's findings were [[super cool and stuff]], earning praise from researchers worldwide.",c:["NO CHANGE","groundbreaking","kind of awesome","pretty neat"],a:1,x:"The essay's tone is formal. \"Groundbreaking\" matches that tone and fits \"earning praise from researchers worldwide.\""},
+ {id:"b-e10",s:"english",t:"purpose",p:"lib",q:"Suppose the writer's goal had been to describe how a community worked together to support a local institution. Would this essay accomplish that goal?",c:["Yes, because it describes residents raising money for a new library building.","Yes, because it lists the kinds of books in the first collection.","No, because it focuses mainly on the post office.","No, because it gives only the year the library opened."],a:0,x:"The second paragraph shows residents holding fundraisers to build the library, which is community support for an institution."},
+ {id:"b-e11",s:"english",t:"punct",q:"The recipe calls for only three [[ingredients: flour,]] sugar, and butter.",c:["NO CHANGE","ingredients; flour,","ingredients, flour:","ingredients flour;"],a:0,x:"A colon can introduce a list after a complete sentence (\"The recipe calls for only three ingredients\")."},
+ {id:"b-m1",s:"math",t:"ies",q:"A jacket regularly priced at $80 is on sale for 25% off. A sales tax of 8% is then applied to the sale price. What is the total cost?",c:["$58.40","$64.80","$66.00","$86.40"],a:1,x:"Sale price: 80 × 0.75 = $60. With tax: 60 × 1.08 = $64.80."},
+ {id:"b-m2",s:"math",t:"alg",q:"If 3x − 7 = 2x + 5, what is the value of x?",c:["−12","−2","2","12"],a:3,x:"Subtract 2x from both sides: x − 7 = 5, so x = 12."},
+ {id:"b-m3",s:"math",t:"alg",q:"If x + y = 10 and x − y = 4, what is the value of xy?",c:["16","21","24","28"],a:1,x:"Add the equations: 2x = 14, so x = 7 and y = 3. Then xy = 21."},
+ {id:"b-m4",s:"math",t:"func",q:"If f(x) = 2x² − 3x + 1, what is f(−2)?",c:["−1","3","11","15"],a:3,x:"2(−2)² − 3(−2) + 1 = 8 + 6 + 1 = 15."},
+ {id:"b-m5",s:"math",t:"geo",q:"A right triangle has legs of length 6 and 8. What is its area?",c:["10","24","30","48"],a:1,x:"Area = ½ × 6 × 8 = 24. (48 forgets the ½; 10 is the hypotenuse.)"},
+ {id:"b-m6",s:"math",t:"geo",q:"A circle has an area of 49π square units. What is its circumference?",c:["7π","14π","49π","98π"],a:1,x:"πr² = 49π, so r = 7. Circumference = 2πr = 14π."},
+ {id:"b-m7",s:"math",t:"stat",q:"The mean of 5 numbers is 12. Four of the numbers are 10, 14, 9, and 15. What is the fifth number?",c:["10","11","12","13"],a:2,x:"The total is 5 × 12 = 60. The four numbers sum to 48, so the fifth is 60 − 48 = 12."},
+ {id:"b-m8",s:"math",t:"stat",q:"A bag contains 4 red, 6 blue, and 5 green marbles. One marble is chosen at random. What is the probability it is NOT blue?",c:["4/15","1/3","2/5","3/5"],a:3,x:"9 of the 15 marbles are not blue: 9/15 = 3/5. (2/5 is the chance it IS blue.)"},
+ {id:"b-m9",s:"math",t:"num",q:"Which expression is equivalent to (2x³)² · x⁴ ?",c:["2x¹⁰","4x⁹","4x¹⁰","4x²⁴"],a:2,x:"(2x³)² = 4x⁶. Then 4x⁶ · x⁴ = 4x¹⁰. Add exponents when multiplying, multiply when raising a power to a power."},
+ {id:"b-m10",s:"math",t:"trig",q:"In a right triangle, the side opposite angle θ is 5 and the hypotenuse is 13. What is tan θ?",c:["5/13","12/13","5/12","12/5"],a:2,x:"The adjacent side is √(13² − 5²) = 12. tan θ = opposite/adjacent = 5/12."},
+ {id:"b-m11",s:"math",t:"func",q:"What is the slope of the line through (2, 3) and (6, 11)?",c:["1/2","2","4","8"],a:1,x:"Slope = (11 − 3)/(6 − 2) = 8/4 = 2."},
+ {id:"b-m12",s:"math",t:"ies",q:"A car travels 150 miles in 2.5 hours. At the same rate, how far will it travel in 4 hours?",c:["200 miles","220 miles","240 miles","375 miles"],a:2,x:"Rate = 150 ÷ 2.5 = 60 mph. In 4 hours: 60 × 4 = 240 miles."},
+ {id:"b-r1",s:"reading",t:"main",p:"bees",q:"The passage mainly focuses on:",c:["the growth of a rooftop beekeeping program and a debate about its effects.","the chemistry of how honeybees produce honey.","reasons rural farms are better places for bees than cities.","step-by-step instructions for starting a beehive."],a:0,x:"The passage traces the program's growth, presents Pike's criticism, and ends with Delgado's response. Only A covers the whole passage."},
+ {id:"b-r2",s:"reading",t:"detail",p:"bees",q:"According to the passage, city bees often thrive because:",c:["rooftops stay warmer than rural fields.","city plants bloom at different times, providing food over a long season.","cities have fewer predators than rural areas.","beekeepers feed the bees sugar water in winter."],a:1,x:"Paragraph 2 says parks, trees, and gardens bloom at different times, giving bees nectar from spring to fall."},
+ {id:"b-r3",s:"reading",t:"infer",p:"bees",q:"It can reasonably be inferred that Delgado views Pike's concern as:",c:["completely false.","something she had never heard before.","worth taking steps to address.","relevant only to rural beekeepers."],a:2,x:"She \"does not dismiss the concern\" and added a native-wildflower requirement, which is a step taken in response."},
+ {id:"b-r4",s:"reading",t:"vocab",p:"bees",q:"As it is used in the final paragraph, the word \"dismiss\" most nearly means:",c:["disregard.","fire from a job.","release from class.","send away."],a:0,x:"Delgado doesn't ignore Pike's concern, so \"dismiss\" means to disregard."},
+ {id:"b-r5",s:"reading",t:"craft",p:"bees",q:"Pike's comparison to opening a new restaurant mainly serves to:",c:["suggest that bees prefer city flowers to rural ones.","illustrate how added honeybees could reduce the food available to wild bees.","argue against building restaurants near rooftop hives.","show how quickly the number of hives has grown."],a:1,x:"The analogy explains competition: more \"diners\" (honeybees) for the same food can leave others (wild bees) hungry."},
+ {id:"b-s1",s:"science",t:"data",p:"seeds",q:"According to the results, germination was highest at which temperature?",c:["20°C","25°C","30°C","35°C"],a:1,x:"The table shows 90% at 25°C, the largest value."},
+ {id:"b-s2",s:"science",t:"data",p:"seeds",q:"As temperature increased from 10°C to 35°C, the percent of seeds that germinated:",c:["increased only.","decreased only.","increased, then decreased.","stayed about the same."],a:2,x:"It rose from 12% to 90% (at 25°C), then fell to 40% at 35°C."},
+ {id:"b-s3",s:"science",t:"data",p:"seeds",q:"If the students had also tested 22°C, the percent germinated would most likely have been:",c:["less than 46%.","between 46% and 78%.","between 78% and 90%.","greater than 90%."],a:2,x:"22°C falls between 20°C (78%) and 25°C (90%), so the result should fall between those values."},
+ {id:"b-s4",s:"science",t:"design",p:"seeds",q:"Which variable did the students intentionally change in this study?",c:["The temperature","The number of seeds","The type of seed","The number of days"],a:0,x:"Seeds, seed type, and days were kept the same. Only temperature varied: that's the independent variable."},
+ {id:"b-s5",s:"science",t:"models",p:"seeds",q:"A student claims, \"The warmer the temperature, the more radish seeds will germinate.\" Do the results support this claim?",c:["Yes, because germination at 35°C was greater than at 10°C.","Yes, because germination was highest at the warmest temperature.","No, because germination dropped at temperatures above 25°C.","No, because germination was the same at every temperature."],a:2,x:"Above 25°C germination fell (84%, then 40%), so warmer is not always better."}
+];
+
+/* ---------- More built-in questions (with difficulty) ---------- */
+Object.assign(PASS,{
+glass:`[1] Glassblowing begins with a blob of molten glass gathered on the end of a long metal pipe. [2] The artist then blows gently into the pipe, forming a bubble. [3] Finally, the finished piece is placed in a special oven to cool slowly over many hours. [4] While the bubble is still hot, the artist shapes it by rolling it on a steel table and using wooden tools.`,
+lantern:`My grandfather kept a lantern on the windowsill of his workshop, though the building had electric lights for as long as I could remember. It was a plain thing, dented brass with a cracked glass chimney, and it never held any oil. When I asked him why he kept it, he only said that it had been useful once.
+
+The summer I turned fifteen, he asked me to help him repair a rowboat that had sat behind the shed for a decade. I expected to sand and paint for an afternoon. Instead, we worked every morning for six weeks, replacing rotted planks one at a time. He measured each board three times before cutting it, and when I complained about the pace, he handed me the tape measure without a word.
+
+On the last day, we carried the boat down to the lake. It floated, and for a moment neither of us spoke. Then he told me about the winter his father's fishing boat failed to return before dark, and how his mother had set that lantern in the window and kept it burning until dawn, when the boat finally appeared through the fog.
+
+"I keep it to remember that waiting is a kind of work, too," he said.
+
+I understood, then, why he had never hurried me, and why he had never hurried the boat.`,
+ice:`Two students explain why ice floats on liquid water.
+
+Student 1: Ice floats because it is less dense than liquid water. When water freezes, its molecules lock into a rigid structure with more open space between them, so a given mass of ice takes up more volume than the same mass of liquid water.
+
+Student 2: Ice floats because air bubbles become trapped in it as it freezes. The trapped air makes the ice lighter. Ice with no air bubbles in it would sink in liquid water.
+
+Table 1 (densities at 1 atmosphere of pressure):
+Substance | Density (g/cm³)
+Liquid water at 4°C | 1.000
+Liquid water at 0°C | 0.9998
+Ice at 0°C, no bubbles | 0.917
+Vegetable oil at 20°C | 0.920`
+});
+BUILTIN.push(
+ {id:"b-e12",s:"english",t:"punct",d:"hard",q:"The festival's headliner [[— a jazz trio from New Orleans,]] drew the largest crowd in the event's history.",c:["NO CHANGE","— a jazz trio from New Orleans —",", a jazz trio from New Orleans —","a jazz trio from New Orleans —"],a:1,x:"An interrupting phrase must open and close with the same punctuation, so a phrase that starts with a dash has to end with a dash.",xl:"The phrase \"a jazz trio from New Orleans\" interrupts the sentence to describe the headliner, so it needs matching punctuation on both sides. You can use two commas or two dashes, but never one of each. Since the phrase already starts with a dash and that dash isn't part of your choices to change, it must end with a dash too, which makes B correct. A and C mix a dash with a comma, and D drops the opening punctuation entirely. Whenever you see one dash in a sentence, look for its partner."},
+ {id:"b-e13",s:"english",t:"usage",d:"medium",q:"The coach gave the awards to Priya and [[I]] at the banquet.",c:["NO CHANGE","me","myself","mine"],a:1,x:"\"To\" needs an object pronoun, and \"me\" is the object form. Drop \"Priya and\" to check: the coach gave the awards to me.",xl:"Pronouns change form depending on their job in the sentence: \"I\" is a subject, while \"me\" is an object. Here the pronoun comes after the preposition \"to,\" so it is an object and must be \"me.\" The quickest check is to remove the other person: \"The coach gave the awards to I\" sounds wrong, but \"to me\" sounds right. \"Myself\" (C) is only correct when the subject also does the action (\"I gave myself a break\"), and \"mine\" (D) shows possession. Many students pick \"I\" because \"Priya and I\" sounds formal, which is exactly the trap."},
+ {id:"b-e14",s:"english",t:"usage",d:"hard",q:"Neither the players nor the coach [[were]] ready for the sudden rainstorm.",c:["NO CHANGE","was","have been","are"],a:1,x:"With \"neither … nor,\" the verb agrees with the closer subject, \"coach,\" which is singular, so \"was\" is right.",xl:"When two subjects are joined by \"either … or\" or \"neither … nor,\" the verb agrees with whichever subject is closer to it. Here the closer subject is \"the coach,\" which is singular, so the verb must be singular too. \"Was\" is singular and past tense, matching the sudden rainstorm that already happened. \"Were,\" \"have been\" and \"are\" are all plural forms that would only fit if the sentence ended with a plural subject, like \"nor the players.\" This is a rule many people break in everyday speech, which is why the ACT likes to test it."},
+ {id:"b-e15",s:"english",t:"sent",d:"hard",q:"[[Walking into the auditorium, the stage lights blinded the nervous performers.]]",c:["NO CHANGE","Walking into the auditorium, the nervous performers were blinded by the stage lights.","The stage lights, walking into the auditorium, blinded the nervous performers.","Walking into the auditorium blinded the nervous performers and the stage lights."],a:1,x:"An opening phrase like \"Walking into the auditorium\" must be followed by whoever is walking, which is the performers.",xl:"This is a dangling (misplaced) modifier question. The opening phrase \"Walking into the auditorium\" describes someone, and the ACT expects the noun right after the comma to be the one doing it. In the original, that noun is \"the stage lights,\" which makes it sound like the lights walked in. Only B puts \"the nervous performers\" right after the comma, so it's clear they were walking. C makes the same mistake in a different order, and D turns the walking into something that blinds both the performers and the lights, which makes no sense."},
+ {id:"b-e16",s:"english",t:"sent",d:"medium",q:"Because the bridge was closed for [[repairs. Drivers]] had to take a long detour.",c:["NO CHANGE","repairs, drivers","repairs; drivers","repairs: drivers"],a:1,x:"\"Because the bridge was closed for repairs\" can't stand alone, so it attaches to the main sentence with a comma.",xl:"A clause that starts with \"because,\" \"although,\" \"when\" or a similar word is dependent: it can't be a sentence on its own. In the original, \"Because the bridge was closed for repairs.\" is a fragment because the period cuts it off from the main idea. The fix is to join it to the independent clause with a comma, as in B. A semicolon (C) needs complete sentences on both sides, and a colon (D) needs a complete sentence before it, so both fail for the same reason. When a sentence opens with a dependent clause, expect a comma before the main clause."},
+ {id:"b-e17",s:"english",t:"concise",d:"medium",q:"The two scientists [[collaborated together jointly]] on the research.",c:["NO CHANGE","collaborated jointly together","collaborated","worked collaboratively together"],a:2,x:"\"Collaborate\" already means \"work together,\" so \"together\" and \"jointly\" are redundant.",xl:"To collaborate means to work together with someone, so adding \"together\" or \"jointly\" repeats the same idea. The original uses both extra words, which is doubly redundant. B just reorders the same redundant words, and D swaps the verb but still adds \"together\" to a word that already means it. \"Collaborated\" by itself says everything needed. If an answer is shorter and still grammatical and complete, it usually beats the wordier options."},
+ {id:"b-e18",s:"english",t:"trans",d:"hard",q:"Many people assume that bats are blind. [[In fact,]] most bat species can see quite well, and some can even see in color.",c:["NO CHANGE","As a result,","Likewise,","In other words,"],a:0,x:"The second sentence corrects a common belief, and \"In fact\" is the transition for correcting a misconception.",xl:"The first sentence states a common belief, and the second shows that the belief is wrong. \"In fact\" is the right transition for correcting a misconception, so NO CHANGE is correct. \"As a result\" (B) would mean bats see well because people think they're blind, which is illogical. \"Likewise\" (C) signals a similar idea and \"In other words\" (D) signals a restatement, but the second sentence contradicts the first. Remember that NO CHANGE is correct about as often as any other choice, so don't avoid it just because it feels too easy."},
+ {id:"b-e19",s:"english",t:"org",d:"hard",p:"glass",q:"For the sake of logic and cohesion, Sentence 4 should be placed:",c:["where it is now.","before Sentence 1.","after Sentence 1.","after Sentence 2."],a:3,x:"Sentence 4 shapes \"the bubble,\" so it must come after Sentence 2 creates the bubble and before Sentence 3's \"Finally.\"",xl:"Placement questions are solved by following the order of events and looking for clue words. Sentence 4 says \"while the bubble is still hot,\" so it must come after the bubble is formed in Sentence 2. It also can't come after Sentence 3, because \"Finally\" signals the last step of the process. That leaves only one spot: after Sentence 2 and before Sentence 3. Look for words like \"the bubble,\" \"then\" and \"finally\" that tie a sentence to what comes before and after it."},
+ {id:"b-e20",s:"english",t:"word",d:"medium",q:"The new policy will [[effect]] how students register for classes.",c:["NO CHANGE","affect","infect","effecting"],a:1,x:"\"Affect\" is the verb meaning \"to influence,\" which is what the policy does to registration.",xl:"\"Affect\" is usually a verb meaning to influence or change something, while \"effect\" is usually a noun meaning a result. The sentence needs a verb after \"will\" that means the policy changes how students register, so \"affect\" is correct. \"Effect\" as a verb exists but means to bring about (\"effect change\"), which doesn't fit here. \"Infect\" has the wrong meaning, and \"effecting\" is the wrong form after \"will.\" A memory trick: Affect is the Action, and Effect is the End result."},
+ {id:"b-e21",s:"english",t:"adddel",d:"medium",p:"glass",q:"If the writer were to delete Sentence 3, the paragraph would primarily lose:",c:["a description of the final step in the glassblowing process.","an explanation of why glass must be heated.","a detail about the tools glassblowers use.","the writer's opinion about glassblowing."],a:0,x:"Sentence 3 begins with \"Finally\" and describes the cooling step, which is the last step of the process.",xl:"For \"what would be lost\" questions, reread just the sentence in question and describe its job in a few words. Sentence 3 starts with \"Finally\" and explains that the finished piece cools slowly in an oven, the last step of the process. So deleting it removes the final step, which is A. The sentence never explains why glass is heated (B), never mentions tools (C, which are in Sentence 4), and states no opinion (D). Match the answer to what the sentence actually says, not to what the essay talks about elsewhere."},
+ {id:"b-m13",s:"math",t:"func",d:"medium",q:"What is the minimum value of f(x) = x² − 6x + 5 ?",c:["−9","−4","3","5"],a:1,x:"The vertex is at x = −b/(2a) = 3, and f(3) = 9 − 18 + 5 = −4.",xl:"A parabola that opens upward (positive x² term) has its minimum at the vertex. The x-coordinate of the vertex is −b/(2a) = −(−6)/(2·1) = 3. Plug that in to get the minimum value: f(3) = 9 − 18 + 5 = −4. Choice 3 is the x-value where the minimum happens, not the minimum value itself, which is a common trap. Choice 5 is just the y-intercept, f(0)."},
+ {id:"b-m14",s:"math",t:"func",d:"medium",q:"A town's population is 2,000 and doubles every 5 years. What will the population be in 15 years?",c:["6,000","8,000","16,000","32,000"],a:2,x:"15 years is three doubling periods: 2,000 → 4,000 → 8,000 → 16,000.",xl:"Exponential growth multiplies by the same factor each period instead of adding the same amount. Fifteen years contains 15 ÷ 5 = 3 doubling periods. So the population is 2,000 × 2³ = 2,000 × 8 = 16,000. Choice 6,000 comes from adding 2,000 three times (linear thinking), and 8,000 comes from doubling only twice. The formula P = P₀ · 2^(t/5) works for any number of years."},
+ {id:"b-m15",s:"math",t:"alg",d:"medium",q:"A theater sold 50 tickets for a total of $520. Adult tickets cost $12 and child tickets cost $8. How many adult tickets were sold?",c:["20","25","30","35"],a:2,x:"Solve a + c = 50 and 12a + 8c = 520 to get a = 30.",xl:"Set up two equations: a + c = 50 for the number of tickets and 12a + 8c = 520 for the money. From the first equation, c = 50 − a. Substitute: 12a + 8(50 − a) = 520, which becomes 4a + 400 = 520, so a = 30. Check it: 30 adults × $12 = $360 and 20 children × $8 = $160, which add to $520. You can also test each answer choice, starting with the middle values, if setting up the system feels slow."},
+ {id:"b-m16",s:"math",t:"alg",d:"hard",q:"Which of the following is the solution set of |2x − 3| < 7 ?",c:["−2 < x < 5","x < 5","−5 < x < 2","x < −2 or x > 5"],a:0,x:"|2x − 3| < 7 means −7 < 2x − 3 < 7, which simplifies to −2 < x < 5.",xl:"An absolute value less than a number means the expression is trapped between the negative and positive of that number. So |2x − 3| < 7 becomes −7 < 2x − 3 < 7. Add 3 to all three parts to get −4 < 2x < 10, then divide by 2 to get −2 < x < 5. Choice D is the answer for \"greater than,\" which splits into two separate pieces. Choice B forgets the negative side, and C flips the signs."},
+ {id:"b-m17",s:"math",t:"geo",d:"medium",q:"What are the center and radius of the circle (x − 2)² + (y + 3)² = 25 ?",c:["Center (2, −3), radius 5","Center (−2, 3), radius 5","Center (2, −3), radius 25","Center (−2, 3), radius 25"],a:0,x:"In (x − h)² + (y − k)² = r², the center is (h, k) and the radius is √25 = 5.",xl:"The standard form of a circle is (x − h)² + (y − k)² = r², where (h, k) is the center. Because the formula subtracts h and k, (x − 2) means h = 2, and (y + 3) = (y − (−3)) means k = −3. The number on the right is r², not r, so the radius is √25 = 5. Choice B flips the signs of the center, and C and D forget to take the square root. Both traps are very common, so check signs and the square root every time."},
+ {id:"b-m18",s:"math",t:"trig",d:"hard",q:"If sin θ = 3/5 and θ is in Quadrant II, what is cos θ ?",c:["−4/5","4/5","−3/4","3/4"],a:0,x:"A 3-4-5 triangle gives |cos θ| = 4/5, and cosine is negative in Quadrant II.",xl:"Start with the reference triangle: if sin θ = 3/5, the opposite side is 3 and the hypotenuse is 5, so the adjacent side is 4 (a 3-4-5 triangle). That makes the size of cos θ equal to 4/5. Now think about the sign: in Quadrant II, x-values are negative, and cosine follows x, so cos θ = −4/5. Choice B ignores the quadrant, and C and D are tangent values (opposite over adjacent). Remember \"All Students Take Calculus\": in Quadrants I through IV, the positive functions are all, sine, tangent and cosine."},
+ {id:"b-m19",s:"math",t:"num",d:"hard",q:"If log₂(x) = 5, what is the value of x?",c:["7","10","25","32"],a:3,x:"log₂(x) = 5 means 2⁵ = x, so x = 32.",xl:"A logarithm asks what exponent you need: log₂(x) = 5 means \"2 raised to the 5th power equals x.\" Rewrite it in exponential form: x = 2⁵ = 2 × 2 × 2 × 2 × 2 = 32. Choice 10 comes from multiplying 2 × 5, 7 from adding them, and 25 from computing 5² instead of 2⁵. To convert, the base of the log becomes the base of the power, and the answer to the log becomes the exponent."},
+ {id:"b-m20",s:"math",t:"stat",d:"hard",q:"Two fair six-sided dice are rolled. What is the probability that the sum is 8?",c:["1/9","5/36","1/6","7/36"],a:1,x:"There are 36 equally likely outcomes, and 5 of them sum to 8: (2,6), (3,5), (4,4), (5,3), (6,2).",xl:"With two dice there are 6 × 6 = 36 equally likely outcomes, because each die is separate. List the pairs that add to 8: (2,6), (3,5), (4,4), (5,3) and (6,2). That's 5 outcomes, so the probability is 5/36. A common mistake is counting (3,5) and (5,3) as the same, which gives 3 outcomes; another is assuming every sum is equally likely, which gives 1/11. Listing the combinations takes 20 seconds and prevents both errors."},
+ {id:"b-m21",s:"math",t:"num",d:"hard",q:"Which of the following is equivalent to (3 + 2i)(1 − i), where i = √−1 ?",c:["1 − i","3 − 2i","5 + i","5 − i"],a:3,x:"FOIL gives 3 − 3i + 2i − 2i², and since i² = −1 that's 3 − i + 2 = 5 − i.",xl:"Multiply complex numbers the same way you FOIL binomials. First: 3·1 = 3. Outer: 3·(−i) = −3i. Inner: 2i·1 = 2i. Last: 2i·(−i) = −2i². Combine to get 3 − i − 2i², and since i² = −1, −2i² becomes +2, giving 5 − i. Choice 5 + i comes from a sign error on the i terms, and 1 − i comes from treating i² as +1."},
+ {id:"b-m22",s:"math",t:"ies",d:"easy",q:"There are 12 inches in 1 foot. How many inches are in 4.5 feet?",c:["13.5","45","48","54"],a:3,x:"4.5 × 12 = 54 inches.",xl:"To change feet to inches, multiply by 12, since each foot has 12 inches. So 4.5 × 12 = 4 × 12 + 0.5 × 12 = 48 + 6 = 54. Choice 48 forgets the half foot, and 45 just moves the decimal point. Choice 13.5 divides instead of multiplying. When converting to a smaller unit, you should end up with a bigger number."},
+ {id:"b-m23",s:"math",t:"stat",d:"medium",q:"The data set 3, 7, 8, 12, 15 has a median of 8. If the value 20 is added to the set, what is the new median?",c:["8","10","11","12"],a:1,x:"With six values, the median is the average of the middle two: (8 + 12) ÷ 2 = 10.",xl:"The median is the middle value of an ordered list. Adding 20 gives six values: 3, 7, 8, 12, 15, 20. With an even number of values there is no single middle, so you average the two middle ones, 8 and 12: (8 + 12) ÷ 2 = 10. Choice 8 is the old median, and 12 picks just one of the middle values. Choice 11 is the mean of the original five values, not a median."},
+ {id:"b-m24",s:"math",t:"func",d:"medium",q:"If f(x) = 3x − 1 and g(x) = x² + 1, what is f(g(2)) ?",c:["10","12","14","26"],a:2,x:"Work inside out: g(2) = 5, then f(5) = 14.",xl:"For a composite function, start with the inside function and work outward. First find g(2) = 2² + 1 = 5. Then plug that result into f: f(5) = 3(5) − 1 = 14. Choice 26 is g(f(2)), which does the functions in the wrong order: f(2) = 5, then g(5) = 26. Always evaluate the function closest to the x first."},
+ {id:"b-r6",s:"reading",t:"craft",d:"easy",p:"lantern",q:"The passage is told from the point of view of:",c:["a narrator recalling time spent with their grandfather.","the grandfather, describing his own childhood.","an outside observer who never meets the grandfather.","the grandfather's mother, waiting for her husband."],a:0,x:"The narrator uses \"I\" and \"my grandfather\" and looks back on the summer they turned fifteen.",xl:"Point-of-view questions ask who is telling the story. The passage opens with \"My grandfather kept a lantern,\" so the narrator is the grandchild, speaking in first person. Phrases like \"The summer I turned fifteen\" show the narrator is looking back on a memory. The grandfather speaks only in one quoted line, so B is wrong, and C is wrong because the narrator works with him for six weeks. The mother appears only in the grandfather's story, so D is wrong too."},
+ {id:"b-r7",s:"reading",t:"detail",d:"medium",p:"lantern",q:"According to the passage, the lantern was once used to:",c:["light the workshop before it had electricity.","guide home a fishing boat that was out after dark.","help the grandfather see while repairing boats.","decorate the windowsill of the family's house."],a:1,x:"The grandfather's mother kept it burning in the window until his father's fishing boat returned at dawn.",xl:"The answer is in the third paragraph, where the grandfather tells his story. His father's fishing boat did not return before dark, and his mother kept the lantern burning in the window until the boat appeared at dawn. That makes B correct. A is a tempting trap because the passage mentions electric lights, but it never says the lantern lit the workshop. C and D are reasonable guesses about a lantern, but the passage doesn't support them, and on the ACT reasonable-sounding isn't enough."},
+ {id:"b-r8",s:"reading",t:"infer",d:"medium",p:"lantern",q:"When the narrator complains about the slow pace, the grandfather hands over the tape measure \"without a word.\" This most strongly suggests that he:",c:["is angry and wants the narrator to leave.","expects the narrator to keep working carefully instead of rushing.","has forgotten how to measure the boards himself.","thinks the narrator should finish the boat alone."],a:1,x:"Handing over the tape measure quietly tells the narrator to keep measuring carefully, matching his patient approach.",xl:"Inference questions ask what the details imply, so connect the action to the rest of the passage. The grandfather measures each board three times and never hurries; when the narrator complains, he silently hands over the measuring tool. That's a quiet way of saying \"keep doing it carefully,\" which matches B. Nothing suggests anger (A) or that he forgot how to measure (C), and the two of them keep working together, so D is wrong. The final line, about why he never hurried the narrator, confirms the reading."},
+ {id:"b-r9",s:"reading",t:"craft",d:"hard",p:"lantern",q:"The final paragraph of the passage mainly serves to:",c:["introduce a new conflict between the narrator and the grandfather.","show the narrator connecting the lantern story to the grandfather's patience.","describe what the repaired rowboat looked like on the lake.","reveal that the lantern could no longer be lit."],a:1,x:"The narrator realizes the grandfather's slow, patient work on the boat reflects the lesson of the lantern.",xl:"Questions about a paragraph's purpose ask what job it does in the passage as a whole. The final paragraph comes right after the grandfather explains that \"waiting is a kind of work,\" and the narrator says, \"I understood, then, why he had never hurried me.\" So the paragraph ties the lantern story to the grandfather's patience during the six weeks of repairs, which is B. There is no new conflict (A), no description of the boat (C), and the lantern's condition was described back in the first paragraph (D). Final paragraphs in literary passages often deliver the narrator's realization, so look for that."},
+ {id:"b-r10",s:"reading",t:"vocab",d:"hard",p:"lantern",q:"In context, the grandfather's statement that \"waiting is a kind of work, too\" most nearly suggests that:",c:["patience can take real effort and purpose.","most jobs involve long breaks between tasks.","his mother was paid to watch for the boat.","waiting is usually a waste of time."],a:0,x:"His mother's all-night watch with the lantern was an effortful, purposeful act, so waiting can be real work.",xl:"This question asks you to interpret a line in context, not define words literally. The grandfather says this right after describing his mother keeping the lantern lit all night while waiting for the boat, which was a tiring and meaningful effort. He also works on the boat slowly and patiently for weeks. Together, these suggest waiting takes effort and has a purpose, which matches A. B and C read \"work\" too literally as a job, and D contradicts the respectful way the passage treats waiting."},
+ {id:"b-s6",s:"science",t:"data",d:"easy",p:"ice",q:"According to Table 1, which substance has the greatest density?",c:["Liquid water at 4°C","Liquid water at 0°C","Ice at 0°C, no bubbles","Vegetable oil at 20°C"],a:0,x:"Liquid water at 4°C has a density of 1.000 g/cm³, the largest value in the table.",xl:"Compare the numbers in the density column: 1.000, 0.9998, 0.917 and 0.920. The largest is 1.000 g/cm³, for liquid water at 4°C. Choice B is a close trap, since 0.9998 is very slightly smaller than 1.000. When values are this close, compare them digit by digit after the decimal point. Science questions like this reward reading the table carefully rather than knowing outside facts."},
+ {id:"b-s7",s:"science",t:"models",d:"medium",p:"ice",q:"The density of bubble-free ice in Table 1 best supports which student's explanation?",c:["Student 1, because ice with no bubbles is less dense than liquid water.","Student 1, because ice with no bubbles is denser than liquid water.","Student 2, because ice with no bubbles is less dense than liquid water.","Student 2, because air bubbles increase the density of ice."],a:0,x:"Bubble-free ice (0.917) is still less dense than liquid water (0.9998), so it floats without air, as Student 1 says.",xl:"Student 2 claims ice floats only because of trapped air, so ice with no bubbles should sink. But Table 1 shows that bubble-free ice has a density of 0.917 g/cm³, less than liquid water's 0.9998 g/cm³, so it would still float. That supports Student 1, who says ice is simply less dense than water because of its open molecular structure. Choice B gets the comparison backward, and C pairs the correct fact with the wrong student. For conflicting-viewpoint questions, check both the student and the reason, since each can be wrong separately."},
+ {id:"b-s8",s:"science",t:"models",d:"medium",p:"ice",q:"Student 2 would most likely predict that a cube of bubble-free ice placed in liquid water at 0°C would:",c:["sink.","float.","dissolve immediately.","float halfway submerged."],a:0,x:"Student 2 says ice floats only because of trapped air, so ice with no bubbles would sink.",xl:"This question asks what Student 2 would predict, not what actually happens. Student 2's last sentence says that ice with no air bubbles would sink in liquid water. So by Student 2's reasoning, a bubble-free cube would sink, which is A. Choice B is what really happens according to Table 1, which is the trap: the question is about the student's model, not the data. Always answer \"would predict\" questions using only that person's stated reasoning."},
+ {id:"b-s9",s:"science",t:"data",d:"hard",p:"ice",q:"Based on Table 1, if a cube of bubble-free ice were placed in vegetable oil at 20°C, it would most likely initially:",c:["float, because the ice is slightly less dense than the oil.","sink, because the ice is denser than the oil.","float, because the ice is denser than the oil.","sink, because the oil is less dense than water."],a:0,x:"Ice (0.917 g/cm³) is slightly less dense than the oil (0.920 g/cm³), so it would float.",xl:"An object floats in a liquid when it is less dense than that liquid. Table 1 gives 0.917 g/cm³ for bubble-free ice and 0.920 g/cm³ for vegetable oil, so the ice is very slightly less dense and would float. Choice B misreads the comparison, and C states the floating rule backward: denser things sink. Choice D compares the oil to water, which doesn't tell you anything about the ice. Close numbers like 0.917 and 0.920 are deliberate, so compare them carefully."},
+ {id:"b-s10",s:"science",t:"design",d:"hard",p:"ice",q:"Which experiment would best test Student 2's explanation?",c:["Freeze water that has had its dissolved air removed, then see whether the ice floats in liquid water.","Measure the density of liquid water at several different temperatures.","Freeze water in containers of several different shapes.","Compare how fast ice melts in vegetable oil and in liquid water."],a:0,x:"Student 2's key claim is that air bubbles make ice float, so the best test makes ice without air and checks whether it floats.",xl:"A good test of a hypothesis changes the one factor the hypothesis depends on. Student 2's whole explanation depends on trapped air, so the best experiment removes the air and sees whether the ice still floats. If bubble-free ice floats, Student 2 is wrong; if it sinks, Student 2 is supported. B tests liquid water only, C tests container shape, and D tests melting speed, and none of those involves air bubbles. When a question asks how to test someone's idea, find the specific cause they name and change only that."}
+);
+const DIFF={"b-e1":"medium","b-e2":"easy","b-e3":"easy","b-e4":"medium","b-e5":"easy","b-e6":"easy","b-e7":"easy","b-e8":"medium","b-e9":"easy","b-e10":"medium","b-e11":"medium",
+ "b-m1":"medium","b-m2":"easy","b-m3":"medium","b-m4":"easy","b-m5":"easy","b-m6":"medium","b-m7":"easy","b-m8":"easy","b-m9":"medium","b-m10":"medium","b-m11":"easy","b-m12":"easy",
+ "b-r1":"easy","b-r2":"easy","b-r3":"medium","b-r4":"medium","b-r5":"medium","b-s1":"easy","b-s2":"easy","b-s3":"medium","b-s4":"easy","b-s5":"medium"};
+BUILTIN.forEach(q=>{q.d=q.d||DIFF[q.id]||"medium";});
+const LEVELS={easy:"Easy",medium:"Medium",hard:"Hard"};
+const levelOf=q=>LEVELS[q.d]?q.d:"medium";
+
+/* Detailed explanations shown after a wrong answer (3-5 sentences) */
+const XL = {
+"b-e1":"The phrase \"each of whom works with recycled materials\" adds extra information about the three artists, so it is set off from the main clause with a comma. A semicolon (B) can only join two complete sentences, and \"each of whom works with recycled materials\" cannot stand alone as a sentence. Choice C puts a comma between the verb \"features\" and its object, which the ACT never allows. Choice D breaks up \"each of whom,\" which works as a single unit. When the original already follows the comma rules, NO CHANGE is a perfectly good answer.",
+"b-e2":"Both \"Maya had practiced the piece for weeks\" and \"she still felt nervous\" are complete sentences. Joining two complete sentences with only a comma creates a comma splice, one of the ACT's favorite errors. You can fix a splice with a period, a semicolon, or a comma plus a FANBOYS conjunction (for, and, nor, but, or, yet, so). \"But\" works here because feeling nervous after weeks of practice is a contrast. Choices C and D add commas that break up the sentence without fixing the splice.",
+"b-e3":"\"All twenty of the students\" tells you there are many students, so you need the plural possessive. To make a regular plural noun possessive, write the plural first (students) and then add an apostrophe after the s: students'. \"Student's\" (B) would mean the projects belong to one student, which contradicts \"all twenty.\" Choice C drops the apostrophe, so nothing shows ownership. Choice D wrongly puts the apostrophe on \"projects,\" as if the projects owned something.",
+"b-e4":"The ACT often puts a plural noun right before the verb to trick your ear. The real subject here is \"collection,\" and \"of rare coins\" is just a prepositional phrase describing it. Cross out the phrase and read \"The collection … is stored,\" which is clearly singular. \"Are,\" \"were\" and \"have been\" are all plural forms, so they don't agree with \"collection.\" A good habit: whenever a verb is underlined, find its subject first and ignore phrases that begin with of, in, with and similar words.",
+"b-e5":"The phrase \"Last summer\" places the action firmly in the past, so the verb needs to be past tense. \"Built\" is the simple past form of \"build.\" \"Builds\" (A) is present tense, \"will build\" (B) is future, and \"is building\" (D) describes something happening now. On verb-tense questions, look for time clues like dates, \"yesterday\" or \"next year,\" and check the tense of the verbs in nearby sentences.",
+"b-e6":"Transition questions test the logical relationship between two ideas. The first sentence says the trail is steep and rocky, which suggests it's hard. The second says thousands of people complete it anyway, which is the opposite of what you'd expect, so the relationship is contrast. \"Therefore\" signals cause and effect, \"Similarly\" signals a comparison and \"For example\" signals an illustration, so none of them fits. \"Nevertheless\" means \"despite that,\" which matches the contrast exactly.",
+"b-e7":"\"Later\" already means \"at a future time,\" so adding \"in the future\" or \"a later time\" says the same thing twice. The ACT treats redundancy as an error even when the sentence is grammatically correct. Choices A, B and C all repeat the idea of the future in some way. \"Until later\" keeps the full meaning in the fewest words. When every choice is grammatical, the shortest one that keeps the meaning is very often correct.",
+"b-e8":"For add-or-delete questions, first decide what the paragraph or essay is about, then check whether the new sentence supports that focus. This essay is about the history of the Millbrook library: when it opened, its first books and how residents funded a new building. A cousin's preference for e-books has nothing to do with that history, so the sentence should not be added. Choice A sounds reasonable, but nothing in the sentence shows the library itself changing. Always choose the answer whose reason is actually true about the passage.",
+"b-e9":"The rest of the sentence (\"earning praise from researchers worldwide\") is formal and serious, so the underlined words need to match that tone. \"Super cool and stuff,\" \"kind of awesome\" and \"pretty neat\" are casual, conversational phrases that don't belong in an academic essay. \"Groundbreaking\" is formal, and its meaning (new and important) also explains why researchers would praise the findings. On tone questions, decide whether the passage is formal or casual, then pick the word that fits both the tone and the meaning.",
+"b-e10":"\"Did the essay accomplish this goal?\" questions ask you to compare the goal to what the essay actually does. This essay's second paragraph shows residents holding bake sales, car washes and an auction to pay for a new library building, which is a community supporting a local institution. So the answer is Yes, and the reason in A is accurate. B is wrong because a list of books is not community support. C and D describe the essay inaccurately, since the post office is only mentioned briefly and the essay covers far more than the founding date.",
+"b-e11":"A colon can introduce a list, but only when the words before it form a complete sentence. \"The recipe calls for only three ingredients\" is complete, so the colon before \"flour, sugar, and butter\" is correct. A semicolon (B) needs a complete sentence on both sides, and \"flour, sugar, and butter\" is not a sentence. Choice C moves the colon to the wrong spot, splitting the list itself. Choice D both removes the needed punctuation and adds a semicolon inside the list.",
+"b-m1":"Apply each change in order. First take 25% off: $80 × 0.75 = $60 (or $80 − $20). Then add 8% tax to the sale price, not the original price: $60 × 1.08 = $64.80. A common mistake is applying the tax to $80, which gives $86.40, or subtracting 25% and 8% together, which gives $58.40. Read percent problems carefully to see which amount each percent applies to.",
+"b-m2":"To solve, get all the x-terms on one side and the numbers on the other. Subtract 2x from both sides to get x − 7 = 5. Then add 7 to both sides to get x = 12. Choice −12 comes from a sign error, and ±2 comes from combining the wrong terms. You can always check by plugging in: 3(12) − 7 = 29 and 2(12) + 5 = 29, so the answer works.",
+"b-m3":"When two equations have +y and −y, adding them cancels y. (x + y) + (x − y) = 10 + 4 gives 2x = 14, so x = 7. Substituting back into x + y = 10 gives y = 3. The question asks for xy, the product, which is 7 × 3 = 21. A common trap is stopping after finding x, so always reread what the question actually asks for.",
+"b-m4":"Substitute −2 for every x and use parentheses so the negative signs stay correct. (−2)² = 4, so 2(4) = 8. Then −3(−2) = +6, because a negative times a negative is positive. Adding the pieces gives 8 + 6 + 1 = 15. The most common mistakes are treating (−2)² as −4 or getting −6 instead of +6, which leads to choices like −1 or 3.",
+"b-m5":"The legs of a right triangle are perpendicular, so one leg works as the base and the other as the height. The area of a triangle is ½ × base × height = ½ × 6 × 8 = 24. Choice 48 forgets the ½, which is the most common mistake on triangle area. Choice 10 is the hypotenuse (a 6-8-10 triangle, a multiple of 3-4-5), not the area. Choice 30 doesn't come from a correct formula.",
+"b-m6":"Start from the area to find the radius: πr² = 49π means r² = 49, so r = 7. The circumference is 2πr = 2π(7) = 14π. Choice 7π uses πr instead of 2πr, and 49π just repeats the area. Choice 98π doubles the area instead of using the radius. On circle problems, finding r first almost always unlocks everything else.",
+"b-m7":"The mean equals the sum divided by the count, so the sum equals the mean times the count. Five numbers with a mean of 12 add up to 5 × 12 = 60. The four known numbers add to 10 + 14 + 9 + 15 = 48. The missing number must be 60 − 48 = 12. This \"find the total first\" approach works on almost every missing-value average question on the ACT.",
+"b-m8":"There are 4 + 6 + 5 = 15 marbles in total. \"Not blue\" means red or green, which is 4 + 5 = 9 marbles. The probability is 9/15, which simplifies to 3/5. Choice 2/5 is the probability that the marble IS blue, a classic trap when a question includes the word NOT. You can also use 1 − P(blue) = 1 − 6/15 = 9/15.",
+"b-m9":"When you raise a power to a power, multiply the exponents, and the coefficient gets raised too. So (2x³)² = 2² · x⁶ = 4x⁶. When you multiply powers with the same base, add the exponents: x⁶ · x⁴ = x¹⁰. That gives 4x¹⁰. Choice 2x¹⁰ forgets to square the 2, 4x⁹ comes from an addition error, and 4x²⁴ multiplies the exponents when they should be added.",
+"b-m10":"Remember SOH-CAH-TOA: tangent is opposite over adjacent. You know the opposite side (5) and the hypotenuse (13), so use the Pythagorean theorem to find the adjacent side: √(13² − 5²) = √144 = 12. Then tan θ = 5/12. Choice 5/13 is sin θ, 12/13 is cos θ, and 12/5 flips the ratio. Recognizing the 5-12-13 triangle can save you time.",
+"b-m11":"Slope is the change in y divided by the change in x: (y₂ − y₁)/(x₂ − x₁). Here that's (11 − 3)/(6 − 2) = 8/4 = 2. Choice 1/2 puts x over y, which is the most common slope mistake. Choices 4 and 8 use only the change in x or only the change in y. Keep the points in the same order in both the top and the bottom.",
+"b-m12":"First find the unit rate: 150 miles ÷ 2.5 hours = 60 miles per hour. At 60 miles per hour, 4 hours of driving covers 60 × 4 = 240 miles. You could also set up a proportion: 150/2.5 = x/4, which gives x = 240. Choice 375 comes from multiplying 150 by 2.5, and the other choices come from guessing instead of computing the rate.",
+"b-r1":"Main-idea questions want the answer that covers the whole passage, not just one part of it. This passage describes how the rooftop program grew, explains why supporters think city bees thrive, presents Dr. Pike's criticism and ends with Delgado's response. Only A includes both the program's growth and the debate. B and D describe topics the passage never covers. C is wrong because the passage says some rural areas offer bees fewer flowers, which is the opposite of claiming farms are better.",
+"b-r2":"Detail questions are answered directly in the text, so go back and find the line. Paragraph 2 says parks, street trees and balcony gardens \"bloom at different times,\" giving bees nectar from early spring to late fall. That matches B almost word for word. The passage never mentions rooftop temperatures, predators or sugar water, so A, C and D bring in outside ideas. On the ACT, an answer that sounds true in real life but isn't in the passage is wrong.",
+"b-r3":"An inference has to be strongly supported by the text, even if it isn't stated outright. The passage says Delgado \"does not dismiss the concern\" and then describes a new rule requiring native wildflowers, a direct response to Pike's point about wild bees. That shows she thinks the concern is worth acting on. A contradicts \"does not dismiss,\" and nothing suggests she had never heard the concern (C) or thought it applied only to rural areas (D).",
+"b-r4":"Words-in-context questions test the meaning of a word in this specific sentence, not its most common meaning. To \"dismiss\" can mean to fire someone or let a class go, but those don't make sense for a concern. The sentence says Delgado does not dismiss Pike's concern, and then she takes action on it, so \"dismiss\" here means to ignore or disregard. Try replacing the word with each choice: \"Delgado does not disregard the concern\" keeps the meaning.",
+"b-r5":"Questions about why an author includes a comparison want the job it does in the argument. Pike compares adding honeybees to opening another restaurant in a neighborhood that already has plenty: more diners competing for the same food means someone goes hungry. That illustrates his point that honeybees may take flowers that wild bees need. B, C and D take the restaurant comparison too literally or tie it to the wrong part of the passage.",
+"b-s1":"Find the column for percent germinated and look for the largest number. The values are 12, 46, 78, 90, 84 and 40, so the highest is 90%, at 25°C. Choice 30°C is a close trap because 84% is high, but it is still lower than 90%. Choice 35°C may tempt you if you assume hotter always means more germination, but the data show the opposite above 25°C.",
+"b-s2":"Follow the numbers from the coldest temperature to the hottest: 12 → 46 → 78 → 90 → 84 → 40. Germination rises up to 25°C, then falls at 30°C and 35°C. That pattern is \"increased, then decreased.\" Choice A would require every value to be bigger than the one before, which fails after 25°C. Trend questions reward reading the whole table, not just the first and last values.",
+"b-s3":"For a value the students didn't test, look at the two closest tested values on either side. 22°C falls between 20°C (78%) and 25°C (90%). Because the data rise steadily through that range, the result at 22°C should land between 78% and 90%. Choices A and B are too low (those values match colder temperatures), and D goes above the highest value anywhere in the data.",
+"b-s4":"The variable the scientists change on purpose is the independent variable. In this study, every group had 50 radish seeds, damp paper towels, darkness and 5 days. Only the temperature differed from group to group, so temperature is what was intentionally changed. Seed number, seed type and number of days were held constant (controlled) so they couldn't affect the results. The percent germinated is the dependent variable, the result that gets measured.",
+"b-s5":"To test a claim against data, check whether the claim holds across the entire range. The claim says warmer temperatures always lead to more germination. That's true from 10°C to 25°C, but germination drops to 84% at 30°C and 40% at 35°C, so the claim fails. A only compares two points and ignores the drop, and B is false because the warmest temperature (35°C) actually had one of the lowest results. D is false because the values clearly differ."
+};
+
+/* ---------- State ---------- */
+let P = {stats:{}, seen:{}, sessions:[], coins:0, streak:0, best:0, badges:{}, owned:[], look:{theme:"classic",avatar:"owl",frame:"none",name:""}};
+/* Coins: 10 per correct answer, 1 for every question tried.
+   Streak bonus compounds: every 3 in a row pays a bonus that doubles each time
+   (3 → +5, 6 → +10, 9 → +20, 12 → +40 …), capped at +640. */
+const COIN_RIGHT=10, COIN_TRY=1, STREAK_BASE=5, STREAK_CAP=640;
+const streakBonus = s => (s>0 && s%3===0) ? Math.min(STREAK_BASE*2**(s/3-1), STREAK_CAP) : 0;
+const nextBonusAt = s => { const n=(Math.floor(s/3)+1)*3; return {n, b:streakBonus(n)}; };
+
+/* Store */
+const THEMES=[
+  {id:"classic",n:"Classic Blue",cost:0,l:"#1f5eff",d:"#6f9bff"},
+  {id:"ocean",n:"Ocean",cost:50,l:"#0a7f99",d:"#4fd1e8"},
+  {id:"forest",n:"Forest",cost:100,l:"#2c7a3a",d:"#6fd37d"},
+  {id:"sunset",n:"Sunset",cost:150,l:"#d9480f",d:"#ff8a5c"},
+  {id:"berry",n:"Berry",cost:200,l:"#c2185b",d:"#ff6fa8"},
+  {id:"grape",n:"Grape",cost:250,l:"#6d3ae0",d:"#b38cff"},
+  {id:"midnight",n:"Midnight",cost:400,l:"#2b3bc4",d:"#8f9cff",bgl:"#e9ecfb",bgd:"#080b24"},
+  {id:"gold",n:"Royal Gold",cost:750,l:"#9a6a00",d:"#f2c94c",bgl:"#fbf6e6",bgd:"#1a1508"}
+];
+const AVATARS=[
+  {id:"owl",e:"🦉",n:"Owl",cost:0},{id:"books",e:"📚",n:"Books",cost:0},{id:"smile",e:"🙂",n:"Smile",cost:0},
+  {id:"cat",e:"🐱",n:"Cat",cost:40},{id:"fox",e:"🦊",n:"Fox",cost:60},{id:"tiger",e:"🐯",n:"Tiger",cost:80},
+  {id:"rocket",e:"🚀",n:"Rocket",cost:120},{id:"brain",e:"🧠",n:"Big Brain",cost:150},{id:"alien",e:"👽",n:"Alien",cost:200},
+  {id:"unicorn",e:"🦄",n:"Unicorn",cost:300},{id:"dragon",e:"🐉",n:"Dragon",cost:500},{id:"crown",e:"👑",n:"Crown",cost:1000}
+];
+const FRAMES=[
+  {id:"none",n:"Plain",cost:0},{id:"silver",n:"Silver",cost:100},{id:"emerald",n:"Emerald",cost:200},
+  {id:"gold",n:"Gold",cost:400},{id:"rainbow",n:"Rainbow",cost:800}
+];
+const SHOP={theme:THEMES,avatar:AVATARS,frame:FRAMES};
+
+/* Badges */
+const BADGES=[
+  {id:"c10",ic:"🌱",n:"First Steps",d:"10 correct",k:"c",v:10},
+  {id:"c25",ic:"✏️",n:"Warming Up",d:"25 correct",k:"c",v:25},
+  {id:"c50",ic:"📘",n:"Half Century",d:"50 correct",k:"c",v:50},
+  {id:"c100",ic:"💯",n:"Century Club",d:"100 correct",k:"c",v:100},
+  {id:"c250",ic:"🎓",n:"Scholar",d:"250 correct",k:"c",v:250},
+  {id:"c500",ic:"🏛️",n:"Test Titan",d:"500 correct",k:"c",v:500},
+  {id:"c1000",ic:"🏆",n:"Legend",d:"1,000 correct",k:"c",v:1000},
+  {id:"s3",ic:"🎩",n:"Hat Trick",d:"3 in a row",k:"s",v:3},
+  {id:"s5",ic:"🔥",n:"On a Roll",d:"5 in a row",k:"s",v:5},
+  {id:"s10",ic:"⚡",n:"Unstoppable",d:"10 in a row",k:"s",v:10},
+  {id:"s15",ic:"☄️",n:"Hot Streak",d:"15 in a row",k:"s",v:15},
+  {id:"s25",ic:"🌟",n:"Superstar",d:"25 in a row",k:"s",v:25},
+  {id:"s50",ic:"💎",n:"Flawless",d:"50 in a row",k:"s",v:50},
+  {id:"d2",ic:"🕯️",n:"Back Again",d:"2 days in a row",k:"d",v:2},
+  {id:"d3",ic:"🔥",n:"Spark",d:"3 days in a row",k:"d",v:3},
+  {id:"d7",ic:"📅",n:"Full Week",d:"7 days in a row",k:"d",v:7},
+  {id:"d14",ic:"🌋",n:"Two Weeks Strong",d:"14 days in a row",k:"d",v:14},
+  {id:"d30",ic:"🏅",n:"Monthly Master",d:"30 days in a row",k:"d",v:30},
+  {id:"d60",ic:"🚀",n:"Unbreakable",d:"60 days in a row",k:"d",v:60},
+  {id:"d100",ic:"👑",n:"Century of Days",d:"100 days in a row",k:"d",v:100}
+];
+const totalCorrect=()=>Object.values(P.stats).reduce((a,s)=>a+s.r,0);
+
+/* Daily streak: days in a row the app was opened (local time) */
+const dayStr=d=>{const x=new Date(d);return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0");};
+const shiftDay=(s,n)=>{const [y,m,d]=s.split("-").map(Number);return dayStr(new Date(y,m-1,d+n,12));};
+function checkIn(announce){
+  const today=dayStr(Date.now());
+  if(P.lastDay===today) return false;
+  const prev=P.dayStreak||0;
+  P.dayStreak = P.lastDay===shiftDay(today,-1) ? prev+1 : 1;
+  P.bestDay=Math.max(P.bestDay||0,P.dayStreak);
+  P.lastDay=today;
+  P.days=(Array.isArray(P.days)?P.days:[]).filter(d=>d>=shiftDay(today,-13)).concat(today);
+  if(announce){
+    if(P.dayStreak>1) toast("🔥",P.dayStreak+"-day streak!","You've opened ACT Study Lab "+P.dayStreak+" days in a row");
+    else if(prev>1) toast("🔥","New streak started","Your last streak was "+prev+" days. Come back tomorrow to build it up");
+  }
+  checkBadges(announce); saveProfile(); showDay(); return true;
+}
+function showDay(){
+  const el=document.getElementById("day"); if(!el) return;
+  const live=P.lastDay===dayStr(Date.now());
+  document.getElementById("dayN").textContent=live?(P.dayStreak||0):0;
+  el.classList.toggle("off",!live);
+  el.setAttribute("aria-label",(live?P.dayStreak||0:0)+" day streak");
+}
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden && ready && checkIn(true) && !session) render(); });
+
+function checkBadges(announce){
+  const c=totalCorrect(), fresh=[];
+  BADGES.forEach(b=>{ const val=b.k==="c"?c:b.k==="s"?P.best:(P.bestDay||0); if(!P.badges[b.id] && val>=b.v){ P.badges[b.id]=Date.now(); fresh.push(b);} });
+  if(announce) fresh.forEach((b,i)=>setTimeout(()=>toast(b.ic,"Badge earned: "+b.n,b.d),i*2600));
+  return fresh.length;
+}
+let toastT=null;
+function toast(ic,title,sub){
+  const t=document.getElementById("toast");
+  t.innerHTML=`<span class="ic">${ic}</span><div><b>${esc(title)}</b><div class="mute small">${esc(sub)}</div></div>`;
+  t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2300);
+}
+
+function fixCoins(){
+  if(typeof P.coins!=="number"){ // backfill from earlier practice
+    let r=0,t=0; Object.values(P.stats).forEach(s=>{r+=s.r;t+=s.t;});
+    P.coins=r*COIN_RIGHT+t*COIN_TRY;
+  }
+  P.streak=P.streak||0; P.best=P.best||0;
+  P.badges=Object.assign({},P.badges);
+  P.owned=Array.isArray(P.owned)?P.owned.slice():[];
+  P.look=Object.assign({theme:"classic",avatar:"owl",frame:"none",name:""},P.look);
+  if(checkBadges(false)) saveProfile();
+  applyLook(); ready=true;
+  setTimeout(()=>{ if(checkIn(true) && !session) render(); },400);
+}
+const owns=(kind,id)=>{const it=SHOP[kind].find(x=>x.id===id);return !!it&&(it.cost===0||P.owned.includes(kind+":"+id));};
+function applyLook(){
+  const th=THEMES.find(t=>t.id===P.look.theme&&owns("theme",t.id))||THEMES[0];
+  const dark=matchMedia("(prefers-color-scheme: dark)").matches, r=document.documentElement.style;
+  const a=dark?th.d:th.l;
+  r.setProperty("--acc",a);
+  r.setProperty("--acc2",`color-mix(in srgb, ${a} ${dark?22:13}%, ${dark?"#18202b":"#ffffff"})`);
+  r.setProperty("--bg", th.bgl ? (dark?th.bgd:th.bgl) : `color-mix(in srgb, ${a} ${dark?6:5}%, ${dark?"#0f141b":"#f5f6f8"})`);
+  const av=document.getElementById("hAva");
+  if(av){ av.textContent=(AVATARS.find(x=>x.id===P.look.avatar)||AVATARS[0]).e; av.className="ava f-"+P.look.frame; }
+}
+try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",applyLook);}catch(e){}
+function showCoins(gain){
+  const n=document.getElementById("coinN"), box=document.getElementById("coins");
+  n.textContent=(P.coins||0).toLocaleString();
+  box.setAttribute("aria-label",(P.coins||0)+" gold coins");
+  if(gain){
+    box.classList.remove("bump"); void box.offsetWidth; box.classList.add("bump");
+    const p=document.createElement("span"); p.className="pop"; p.textContent="+"+gain; box.appendChild(p);
+    setTimeout(()=>p.remove(),1200);
+  }
+}
+let CUSTOM = [];
+let ready=false;
+let db=null, uid=null, profRef=null, qCol=null, mode="loading";
+let tab="plan", session=null, timerId=null;
+let ui = {secs:["smart"], mode:"focus", len:10, timed:false, diff:"any", genSec:"english", genTopic:"", addSec:"english", flash:""};
+
+const bank = ()=> BUILTIN.concat(CUSTOM);
+const tk = q=> q.s+"."+q.t;
+const passageOf = q=> q.p ? PASS[q.p] : (q.passage||"");
+const pkey = q=> q.p || q.pid || "";
+
+/* ---------- Storage ---------- */
+function setNote(t){document.getElementById("saveNote").textContent=t;}
+function localLoad(){
+  try{const p=JSON.parse(localStorage.getItem("actlab.profile")||"null"); if(p) P=Object.assign({stats:{},seen:{},sessions:[]},p);}catch(e){}
+  try{CUSTOM=JSON.parse(localStorage.getItem("actlab.questions")||"[]");}catch(e){CUSTOM=[];}
+}
+function localSave(){
+  try{localStorage.setItem("actlab.profile",JSON.stringify(P));localStorage.setItem("actlab.questions",JSON.stringify(CUSTOM));}catch(e){}
+}
+let saveTimer=null, saving=Promise.resolve();
+function saveProfile(){
+  if(mode!=="db"){localSave();return;}
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{
+    const body=JSON.parse(JSON.stringify(P));
+    saving=saving.then(()=>profRef.set(body)).then(()=>setNote("Saved")).catch(e=>setNote(e&&e.code==="quota_exceeded"?"Storage full":"Couldn't save"));
+  },700);
+}
+async function addQuestion(q){
+  q.created=Date.now();
+  if(mode==="db"){ await qCol.add(q); }
+  else { q.id="l"+q.created+Math.random().toString(36).slice(2,6); CUSTOM.push(q); localSave(); }
+}
+async function deleteQuestion(id){
+  if(mode==="db"){ await qCol.doc(id).delete(); }
+  else { CUSTOM=CUSTOM.filter(q=>q.id!==id); localSave(); render(); }
+}
+async function init(){
+  let ok=false;
+  try{
+    if(typeof claude!=="undefined" && claude.use){
+      const [d,u]=await Promise.all([claude.use("db"),claude.use("user")]);
+      if(d&&u){ uid=await u.id(); if(uid){ db=d; ok=true; } }
+    }
+  }catch(e){}
+  if(!ok){ mode="local"; localLoad(); fixCoins(); showCoins(); setNote("Saving in this browser only"); render(); return; }
+  mode="db"; setNote("Loading your data…");
+  profRef=db.doc("data/users/"+uid+"/profile");
+  qCol=profRef.collection("questions");
+  const slow=setTimeout(()=>setNote("Can't reach saved data yet"),10000);
+  try{
+    const snap=await profRef.get();
+    if(snap.exists){const d=snap.data(); P={stats:Object.assign({},d.stats),seen:Object.assign({},d.seen),sessions:(d.sessions||[]).slice(),coins:d.coins,streak:d.streak,best:d.best,badges:d.badges,owned:d.owned,look:d.look,lastDay:d.lastDay,dayStreak:d.dayStreak,bestDay:d.bestDay,days:d.days};}
+  }catch(e){}
+  fixCoins(); showCoins();
+  qCol.onSnapshot(s=>{
+    clearTimeout(slow);
+    CUSTOM=s.docs.map(d=>Object.assign({},d.data(),{id:d.id}));
+    setNote("Synced");
+    if(!session) render();
+  },e=>{clearTimeout(slow);setNote("Sync stopped");});
+  render();
+}
+
+/* ---------- Prediction model ---------- */
+function officialCounts(sec){
+  const qs=CUSTOM.filter(q=>q.s===sec&&q.origin==="official");
+  const m={}; qs.forEach(q=>m[q.t]=(m[q.t]||0)+1);
+  return {n:qs.length,m};
+}
+// Blend ACT's blueprint with the topics you see on real tests once you've logged 10+ official questions
+function weight(sec,t){
+  const base=(BP[sec].topics.find(x=>x[0]===t)||[0,0,5])[2];
+  const oc=officialCounts(sec);
+  if(oc.n<10) return base;
+  return 0.5*base + 0.5*(100*(oc.m[t]||0)/oc.n);
+}
+function acc(key){const s=P.stats[key];return s?(s.r+1)/(s.t+2):0.5;}
+function rawAcc(key){const s=P.stats[key];return s&&s.t?s.r/s.t:null;}
+function priorities(secs){
+  const out=[];
+  secs.forEach(s=>BP[s].topics.forEach(([t,name])=>{
+    out.push({s,t,name,w:weight(s,t),p:weight(s,t)*(1-acc(s+"."+t))});
+  }));
+  return out.sort((a,b)=>b.p-a.p);
+}
+
+/* ---------- Helpers ---------- */
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function rich(text){
+  const lines=esc(text).split("\n"); let html="", para=[], tbl=[];
+  const fmt=s=>s.replace(/\[\[(.+?)\]\]/g,"<u>$1</u>");
+  const flushP=()=>{if(para.length){html+="<p>"+fmt(para.join("<br>"))+"</p>";para=[];}};
+  const flushT=()=>{if(tbl.length){html+="<table>"+tbl.map((r,i)=>"<tr>"+r.split("|").map(c=>i?`<td>${fmt(c.trim())}</td>`:`<th>${fmt(c.trim())}</th>`).join("")+"</tr>").join("")+"</table>";tbl=[];}};
+  lines.forEach(l=>{
+    if(l.includes("|")){flushP();tbl.push(l.replace(/^\s*\||\|\s*$/g,""));}
+    else if(!l.trim()){flushP();flushT();}
+    else{flushT();para.push(l);}
+  });
+  flushP();flushT();return html;
+}
+const pct=x=>Math.round(x*100)+"%";
+const L="ABCD";
+function fmtTime(s){const neg=s<0;s=Math.abs(s);return (neg?"−":"")+Math.floor(s/60)+":"+String(s%60).padStart(2,"0");}
+
+/* ---------- Views ---------- */
+const V=document.getElementById("view");
+function render(){
+  clearInterval(timerId);
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
+  if(tab==="plan") renderPlan();
+  else if(tab==="practice") session? (session.done?renderSummary():renderQuestion()) : renderSetup();
+  else if(tab==="add") renderAdd();
+  else if(tab==="store") renderStore();
+  else renderProgress();
+}
+
+let buyArmed=null;
+function shopBtn(kind,it){
+  const key=kind+":"+it.id, have=owns(kind,it.id), cur=P.look[kind]===it.id;
+  if(cur) return `<button class="ibtn cur" disabled>In use</button>`;
+  if(have) return `<button class="ibtn own" data-use="${key}">Use</button>`;
+  const short=it.cost-(P.coins||0);
+  if(short>0) return `<button class="ibtn" disabled>🪙 ${it.cost} · need ${short}</button>`;
+  return `<button class="ibtn" data-buy="${key}">${buyArmed===key?"Tap again to buy":"🪙 "+it.cost}</button>`;
+}
+function renderStore(){
+  const av=AVATARS.find(x=>x.id===P.look.avatar)||AVATARS[0];
+  let h=`<div class="card"><h2>Your profile</h2>
+   <div class="row" style="justify-content:flex-start;gap:14px"><span class="ava lg f-${P.look.frame}">${av.e}</span>
+   <div style="flex:1"><label for="pName" style="margin-top:0">Display name</label><input id="pName" maxlength="24" placeholder="Your name" value="${esc(P.look.name)}"></div></div>
+   <div class="row" style="margin-top:12px"><span class="mute small">${BADGES.filter(b=>P.badges[b.id]).length} badges · best streak ${P.best||0}</span><span class="coins"><span class="coin">$</span>${(P.coins||0).toLocaleString()}</span></div></div>`;
+  h+=`<div class="card"><h2>Color themes</h2><div class="shop">`;
+  THEMES.forEach(t=>{h+=`<div class="item ${P.look.theme===t.id?"active":""}"><div class="sw"><i style="background:${t.l}"></i><i style="background:${t.d}"></i><i style="background:${t.bgd||t.bgl||"#f5f6f8"}"></i></div><span class="nm">${t.n}</span>${shopBtn("theme",t)}</div>`;});
+  h+=`</div></div><div class="card"><h2>Avatars</h2><div class="shop">`;
+  AVATARS.forEach(a=>{h+=`<div class="item ${P.look.avatar===a.id?"active":""}"><span class="ava lg f-${P.look.frame}" style="align-self:center">${a.e}</span><span class="nm">${a.n}</span>${shopBtn("avatar",a)}</div>`;});
+  h+=`</div></div><div class="card"><h2>Avatar frames</h2><div class="shop">`;
+  FRAMES.forEach(f=>{h+=`<div class="item ${P.look.frame===f.id?"active":""}"><span class="ava lg f-${f.id}" style="align-self:center">${av.e}</span><span class="nm">${f.n}</span>${shopBtn("frame",f)}</div>`;});
+  h+=`</div></div><p class="mute small">Purchases are yours to keep, even if you reset your progress.</p>`;
+  V.innerHTML=h;
+}
+
+function renderPlan(){
+  const pri=priorities(["english","math","reading"]).slice(0,5);
+  let h=`<div class="card"><h2>Your next 5 priorities</h2>
+  <p class="mute">Ranked by how often each topic shows up on the ACT × how often you miss it. This updates every time you practice.</p>`;
+  pri.forEach((x,i)=>{const a=rawAcc(x.s+"."+x.t);
+    h+=`<div class="pri"><span class="num">${i+1}</span><div><div><b>${esc(x.name)}</b></div><div class="mute small">${BP[x.s].name} · about ${Math.max(1,Math.round(x.w/100*BP[x.s].count))} questions per test · ${a==null?"not practiced yet":"you're at "+pct(a)}</div></div></div>`;});
+  h+=`<div style="margin-top:12px"><button class="btn" data-act="smart">Practice my priorities</button></div></div>`;
+  SECS.forEach(s=>{
+    const oc=officialCounts(s);
+    h+=`<div class="card"><div class="row"><h2>${BP[s].name}${s==="science"?" <span class='mute small'>(optional, not in Composite)</span>":""}</h2><span class="mute small">${BP[s].count} Qs</span></div>`;
+    h+=oc.n>=10?`<p class="mute small">Blended with the ${oc.n} official questions you've logged.</p>`:"";
+    const max=Math.max(...BP[s].topics.map(([t])=>weight(s,t)));
+    BP[s].topics.slice().sort((a,b)=>weight(s,b[0])-weight(s,a[0])).forEach(([t,name])=>{
+      const w=weight(s,t);
+      h+=`<div class="topic"><div class="row"><span>${esc(name)}</span><span>≈${Math.max(1,Math.round(w/100*BP[s].count))} Qs</span></div><div class="bar"><i style="width:${(w/max*100).toFixed(0)}%"></i></div></div>`;});
+    h+=`</div>`;
+  });
+  h+=`<p class="mute small">Topic sizes start from ACT's published blueprint for the enhanced test (English: Production of Writing and Conventions about 38–43% each, Knowledge of Language about 18–23%). Smaller topic splits are estimates. Log official questions under "Add questions" and the predictions shift toward what real tests actually ask.</p>`;
+  V.innerHTML=h;
+}
+
+function secsFor(k){ return k==="smart"?["english","math","reading"]:k==="mixed"?SECS.slice():[k]; }
+const inLevel=q=>ui.diff==="any"||levelOf(q)===ui.diff;
+function renderSetup(){
+  const opts=[["smart","Smart mix"],["mixed","Mixed (all)"]].concat(SECS.map(s=>[s,BP[s].name]));
+  const k=ui.secs[0], chosen=secsFor(k);
+  const pool=bank().filter(q=>chosen.includes(q.s));
+  const avail=pool.filter(inLevel).length;
+  const cnt=lv=>pool.filter(q=>levelOf(q)===lv).length;
+  const single=SECS.includes(k), full=single&&ui.mode==="mix";
+  const desc={smart:"Smart mix pulls English, Math and Reading questions, favoring frequent topics you miss.",mixed:"Mixed pulls from every question in your bank, across all four sections and every topic, in random order."}[k]||(full?`Full mix pulls from every ${BP[k].name} question in your bank, across every topic, in random order.`:"Questions are chosen by how often the topic appears and how you've done on it.");
+  let h=`<div class="card"><h2>Practice</h2>
+   <label>Section</label><div class="chips">${opts.map(([key,n])=>`<button class="chip ${k===key?"on":""}" data-sec="${key}">${n}</button>`).join("")}</div>
+   ${single?`<label>Mode</label><div class="chips"><button class="chip ${!full?"on":""}" data-mode="focus">Weak spots</button><button class="chip ${full?"on":""}" data-mode="mix">Full mix</button></div>`:""}
+   <label>Difficulty</label><div class="chips">${[["any","All levels"],["easy","Easy"],["medium","Medium"],["hard","Hard"]].map(([d,n])=>`<button class="chip ${ui.diff===d?"on":""}" data-diff="${d}">${n}${d==="any"?"":` · ${cnt(d)}`}</button>`).join("")}</div>
+   <label>Questions</label><div class="chips">${[5,10,20,0].map(n=>`<button class="chip ${ui.len===n?"on":""}" data-len="${n}">${n||"All"+(avail?" "+avail:"")}</button>`).join("")}</div>
+   <label>Timing</label><div class="chips"><button class="chip ${!ui.timed?"on":""}" data-timed="0">Untimed</button><button class="chip ${ui.timed?"on":""}" data-timed="1">Real ACT pace</button></div>
+   <p class="mute small">${avail} questions available${ui.diff==="any"?"":" at "+LEVELS[ui.diff]+" level"}. ${desc}${avail&&ui.len&&avail<ui.len?` You'll get all ${avail}; write more below for a longer set.`:""}</p>
+   <button class="btn" data-act="start" ${avail?"":"disabled"}>Start</button></div>`;
+  // generation
+  const gs=ui.genSec, tops=BP[gs].topics;
+  if(!ui.genTopic||!tops.find(t=>t[0]===ui.genTopic)) ui.genTopic=priorities([gs])[0].t;
+  h+=`<div class="card"><h2>Get more questions</h2>
+   <p class="mute">Claude writes new, original questions in the current ACT format for any topic and adds them to your bank.</p>
+   <label>Section</label><div class="chips">${SECS.map(s=>`<button class="chip ${gs===s?"on":""}" data-gsec="${s}">${BP[s].name}</button>`).join("")}</div>
+   <label for="gt">Topic</label><select id="gt">${tops.map(([t,n])=>`<option value="${t}" ${t===ui.genTopic?"selected":""}>${esc(n)}</option>`).join("")}</select>
+   <label>Difficulty</label><div class="chips">${[["mix","Mix of all 3"],["easy","Easy"],["medium","Medium"],["hard","Hard"]].map(([d,n])=>`<button class="chip ${(ui.genDiff||"mix")===d?"on":""}" data-gdiff="${d}">${n}</button>`).join("")}</div>
+   <div style="margin-top:12px"><button class="btn ghost" data-act="gen" id="genBtn">Write 5 new questions</button></div>
+   <div id="genMsg">${ui.flash}</div></div>`;
+  ui.flash="";
+  V.innerHTML=h;
+}
+
+function pickQuestions(secs,n,random){
+  const scored=bank().filter(q=>secs.includes(q.s)&&inLevel(q)).map(q=>{
+    const seen=P.seen[q.id]; const pen=!seen?1:(seen.r<seen.t?0.7:0.15);
+    const base=random?1:(weight(q.s,q.t)/100*(1-acc(tk(q)))+0.01);
+    return {q,w:base*pen*(random?Math.random():(0.6+Math.random()*0.8))};
+  }).sort((a,b)=>b.w-a.w);
+  const picked=scored.slice(0,n||scored.length).map(o=>o.q);
+  const order={}; picked.forEach((q,i)=>{const k=pkey(q)||q.id; if(!(k in order)) order[k]=i;});
+  return picked.sort((a,b)=>order[pkey(a)||a.id]-order[pkey(b)||b.id]);
+}
+function startSession(key){
+  const secs=secsFor(key);
+  const full=SECS.includes(key)&&ui.mode==="mix";
+  const qs=pickQuestions(secs,ui.len,key==="mixed"||full); if(!qs.length) return;
+  const total=qs.reduce((a,q)=>a+BP[q.s].sec,0);
+  const base=key==="smart"?"Smart mix":key==="mixed"?"Mixed":BP[secs[0]].name+(full?" · Full mix":"");
+  session={qs,i:0,ans:[],picked:null,timed:ui.timed,end:Date.now()+total*1000,label:base+(ui.diff==="any"?"":" · "+LEVELS[ui.diff])};
+  tab="practice"; render();
+}
+function renderQuestion(){
+  clearInterval(timerId);
+  const q=session.qs[session.i], pass=passageOf(q), answered=session.picked!=null;
+  const lv=levelOf(q);
+  let h=`<div class="card"><div class="row"><span class="mute small">${esc(session.label)} · ${session.i+1} of ${session.qs.length} · ${q.s!==session.qs[0].s||session.label.startsWith("Mixed")||session.label.startsWith("Smart")?esc(BP[q.s].name)+" · ":""}<span class="lvl lvl-${lv}">${LEVELS[lv]}</span></span>${session.timed?`<span id="timer" class="timer"></span>`:""}<button class="linkbtn" data-act="quit">End</button></div>`;
+  if(pass) h+=`<details ${q.s!=="english"||!answered?"open":""}><summary>Passage</summary><div class="passage">${rich(pass)}</div></details>`;
+  h+=`<div class="q">${rich(q.q)}</div>`;
+  q.c.forEach((c,i)=>{
+    let cls=""; if(answered){ if(i===q.a) cls="ok"; else if(i===session.picked) cls="bad"; }
+    h+=`<button class="choice ${cls}" data-pick="${i}" ${answered?"disabled":""}><b>${L[i]}</b><span>${rich(c).replace(/^<p>|<\/p>$/g,"")}</span></button>`;
+  });
+  if(answered){
+    const right=session.picked===q.a;
+    const last=session.ans[session.ans.length-1], g=last.gain, nb=nextBonusAt(P.streak);
+    h+=`<div class="coinline"><span class="coin">$</span>+${g} coin${g>1?"s":""}${right&&P.streak>=2?` · 🔥 ${P.streak} in a row`:""}${last.bonus?` — streak bonus +${last.bonus}!`:""}</div>
+    <div class="mute small">${right?`Next bonus at ${nb.n} in a row: +${nb.b}`:"Streak reset. 3 in a row starts the bonus again."}</div>`;
+    let body;
+    if(right) body=esc(q.x||"");
+    else {
+      const lx=longExpl(q,session.picked);
+      const key=q.id+":"+session.picked;
+      body = lx ? esc(lx) : `${esc(q.x||"")} <div class="mute small" style="margin-top:6px">${LONG_STATE[key]==="wait"?"Writing a detailed explanation…":""}</div>`;
+      if(!lx && !LONG_STATE[key]) setTimeout(()=>fetchLong(q,session.picked),0);
+    }
+    h+=`<div class="expl"><b>${right?"Correct!":"Not quite — you picked "+L[session.picked]+", but the answer is "+L[q.a]+"."}</b> ${body}<div style="margin-top:6px"><span class="tag">${esc(topicName(q.s,q.t))}</span>${q.origin==="official"?` <span class="tag">Official${q.testDate?" · "+esc(q.testDate):""}</span>`:""}</div></div>
+    <button class="btn" data-act="next">${session.i+1<session.qs.length?"Next":"See results"}</button>`;
+  }
+  h+=`</div>`;
+  V.innerHTML=h;
+  if(session.timed){const tick=()=>{const el=document.getElementById("timer");if(!el)return;const s=Math.round((session.end-Date.now())/1000);el.textContent=s>=0?fmtTime(s):"Time's up "+fmtTime(-s);el.classList.toggle("late",s<0);};tick();timerId=setInterval(tick,1000);}
+}
+/* Detailed explanations for wrong answers */
+const LONG_CACHE={}, LONG_STATE={};
+function longExpl(q,picked){ return q.xl || XL[q.id] || LONG_CACHE[q.id+":"+picked] || ""; }
+const sameQ=(q,picked)=>session&&!session.done&&session.qs[session.i]===q&&session.picked===picked;
+async function fetchLong(q,picked){
+  const key=q.id+":"+picked; if(LONG_STATE[key]) return; // only try once per question + choice
+  LONG_STATE[key]="wait";
+  let sample=null; try{ if(typeof claude!=="undefined"&&claude.use) sample=await claude.use("sample"); }catch(e){}
+  if(!sample){ LONG_STATE[key]="done"; if(sameQ(q,picked)) renderQuestion(); return; }
+  if(sameQ(q,picked)) renderQuestion();
+  const pass=passageOf(q);
+  const prompt=`A student preparing for the ACT answered this ${BP[q.s].name} question wrong (topic: ${topicName(q.s,q.t)}).
+${pass?"Passage:\n"+pass+"\n\n":""}Question: ${q.q}
+${q.c.map((c,i)=>L[i]+") "+c).join("\n")}
+Correct answer: ${L[q.a]}. The student chose: ${L[picked]}.${q.x?"\nNotes: "+q.x:""}
+Write a clear explanation in 3 to 5 sentences, in plain friendly language for a high school student: explain why ${L[q.a]} is correct, why ${L[picked]} is wrong (the likely mistake), and one tip for spotting this kind of question on test day. Text in [[double brackets]] marks an underlined portion. Reply with only the explanation, no heading.`;
+  try{ const r=await sample(prompt,{modelTier:"quick"}); if(r&&r.text) LONG_CACHE[key]=r.text.trim(); }catch(e){}
+  LONG_STATE[key]="done";
+  if(sameQ(q,picked)) renderQuestion();
+}
+function answer(i){
+  if(session.picked!=null) return;
+  const q=session.qs[session.i]; session.picked=i;
+  const right=i===q.a, k=tk(q);
+  const st=P.stats[k]||{r:0,t:0}; P.stats[k]={r:st.r+(right?1:0),t:st.t+1};
+  const se=P.seen[q.id]||{r:0,t:0}; P.seen[q.id]={r:se.r+(right?1:0),t:se.t+1};
+  let gain=COIN_TRY;
+  let bonus=0;
+  if(right){ gain+=COIN_RIGHT; P.streak=(P.streak||0)+1; bonus=streakBonus(P.streak); gain+=bonus; P.best=Math.max(P.best||0,P.streak); }
+  else P.streak=0;
+  P.coins=(P.coins||0)+gain; session.coins=(session.coins||0)+gain;
+  session.ans.push({q,right,gain,bonus,pick:i});
+  checkBadges(true);
+  saveProfile(); renderQuestion(); showCoins(gain);
+}
+function next(){
+  session.picked=null; session.i++;
+  if(session.i>=session.qs.length){
+    session.done=true;
+    const r=session.ans.filter(a=>a.right).length;
+    P.sessions.unshift({d:Date.now(),label:session.label,r,n:session.ans.length,timed:session.timed});
+    P.sessions=P.sessions.slice(0,30); saveProfile();
+  }
+  render(); window.scrollTo(0,0);
+}
+function renderSummary(){
+  const n=session.ans.length, r=session.ans.filter(a=>a.right).length;
+  const by={}; session.ans.forEach(a=>{const k=tk(a.q);by[k]=by[k]||{s:a.q.s,t:a.q.t,r:0,n:0};by[k].n++;if(a.right)by[k].r++;});
+  let h=`<div class="card"><h2>${esc(session.label)} results</h2><div class="big">${r} / ${n}</div><p class="mute">${n?pct(r/n):""} correct${session.timed?" · finished "+(Date.now()>session.end?"over":"within")+" ACT time":""}</p>
+  <div class="coinline" style="font-size:18px"><span class="coin">$</span>+${session.coins||0} coins this session</div>`;
+  Object.values(by).sort((a,b)=>a.r/a.n-b.r/b.n).forEach(x=>{h+=`<div class="topic"><div class="row"><span>${esc(topicName(x.s,x.t))}</span><span>${x.r}/${x.n}</span></div><div class="bar"><i style="width:${x.r/x.n*100}%;background:${x.r===x.n?"var(--ok)":x.r?"var(--acc)":"var(--bad)"}"></i></div></div>`;});
+  h+=`<div style="display:grid;gap:8px;margin-top:10px"><button class="btn" data-act="again">Practice again</button><button class="btn ghost" data-act="done">Back to setup</button></div></div>`;
+  const missed=session.ans.filter(a=>!a.right);
+  if(missed.length){h+=`<div class="card"><h2>Review what you missed</h2>`;missed.forEach(a=>{h+=`<div class="qitem">${rich(a.q.q)}<div><b>Answer ${L[a.q.a]}:</b> ${rich(a.q.c[a.q.a]).replace(/^<p>|<\/p>$/g,"")}</div><div class="mute small">${esc(longExpl(a.q,a.pick)||a.q.x||"")}</div></div>`;});h+=`</div>`;}
+  V.innerHTML=h;
+}
+
+function renderAdd(){
+  const s=ui.addSec;
+  const yr=new Date().getFullYear(), months=["01","02","03","04","05","06","07","08","09","10","11","12"], mn=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  let h=`<div class="card"><h2>Log an official question</h2>
+  <p class="mute small">Type in questions from official materials you have, like your Test Information Release copy or ACT's official prep guide. Each one you log, tagged with its test date, teaches the Plan tab which topics real tests keep repeating.</p>
+  <label>Section</label><div class="chips">${SECS.map(x=>`<button class="chip ${s===x?"on":""}" data-asec="${x}">${BP[x].name}</button>`).join("")}</div>
+  <label for="aTopic">Topic</label><select id="aTopic">${BP[s].topics.map(([t,n])=>`<option value="${t}">${esc(n)}</option>`).join("")}</select>
+  <label for="aDiff">Difficulty</label><select id="aDiff"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option></select>
+  <label>Test date</label><div class="row"><select id="aMon">${months.map((m,i)=>`<option value="${m}" ${m==="04"?"selected":""}>${mn[i]}</option>`).join("")}</select><select id="aYr">${[yr-1,yr,yr+1].map(y=>`<option ${y===2025?"selected":""}>${y}</option>`).join("")}${yr-1>2025?"<option>2025</option>":""}</select></div>
+  <label for="aPass">Passage or context (optional)</label><textarea id="aPass" placeholder="Paste the passage, or the sentences around the question. For data, use | between columns."></textarea>
+  <label for="aQ">Question</label><textarea id="aQ" placeholder="Wrap an underlined part in [[double brackets]]"></textarea>
+  <label>Answer choices — tap the circle next to the correct one</label>
+  ${[0,1,2,3].map(i=>`<div class="choiceIn"><input type="radio" name="aAns" value="${i}" ${i===0?"checked":""} aria-label="Choice ${L[i]} is correct"><b>${L[i]}</b><input id="aC${i}" placeholder="Choice ${L[i]}"></div>`).join("")}
+  <label for="aX">Short explanation (optional, shown when you get it right)</label><textarea id="aX" placeholder="1–2 sentences: why the right answer is right"></textarea>
+  <label for="aXL">Detailed explanation (optional, shown when you miss it)</label><textarea id="aXL" placeholder="3–5 sentences. Leave blank and Claude will write one when you miss it."></textarea>
+  <div style="margin-top:12px"><button class="btn" data-act="save">Save question</button></div><div id="addMsg">${ui.flash}</div></div>`;
+  ui.flash="";
+  // Patterns across tests
+  const off=CUSTOM.filter(q=>q.origin==="official");
+  h+=`<div class="card"><h2>Patterns across real tests</h2>`;
+  if(!off.length) h+=`<p class="mute">Once you log questions from a few test dates, this shows which topics keep coming back.</p>`;
+  SECS.forEach(sec=>{
+    const qs=off.filter(q=>q.s===sec); if(!qs.length) return;
+    const dates=[...new Set(qs.map(q=>q.testDate))].sort();
+    h+=`<h3>${BP[sec].name} · ${qs.length} logged</h3><table class="grid"><tr><th>Topic</th>${dates.map(d=>`<th>${esc(d)}</th>`).join("")}<th>Share</th><th>Blueprint</th></tr>`;
+    BP[sec].topics.forEach(([t,n,w])=>{
+      const c=qs.filter(q=>q.t===t); if(!c.length) return;
+      h+=`<tr><td>${esc(n.split(" (")[0])}</td>${dates.map(d=>`<td>${c.filter(q=>q.testDate===d).length||""}</td>`).join("")}<td>${pct(c.length/qs.length)}</td><td>${w}%</td></tr>`;});
+    h+=`</table>`;
+  });
+  h+=`</div>`;
+  // list
+  const mine=CUSTOM.slice().sort((a,b)=>(b.created||0)-(a.created||0));
+  if(mine.length){
+    h+=`<div class="card"><h2>Your question bank (${mine.length})</h2>`;
+    mine.slice(0,40).forEach(q=>{h+=`<div class="qitem"><div class="row"><span class="tag">${q.origin==="official"?"Official "+esc(q.testDate||""):"Claude-written"}</span><button class="linkbtn danger" data-del="${esc(q.id)}">Delete</button></div><div>${esc(BP[q.s]?BP[q.s].name:q.s)} · ${esc(topicName(q.s,q.t))}</div><div class="mute small">${esc(String(q.q).replace(/\[\[|\]\]/g,"").slice(0,120))}</div></div>`;});
+    if(mine.length>40) h+=`<p class="mute small">Showing the newest 40.</p>`;
+    h+=`</div>`;
+  }
+  V.innerHTML=h;
+}
+async function saveOfficial(){
+  const g=id=>document.getElementById(id).value.trim();
+  const c=[0,1,2,3].map(i=>g("aC"+i)), msg=document.getElementById("addMsg");
+  if(!g("aQ")||c.some(x=>!x)){msg.innerHTML=`<div class="err">Add the question and all four choices.</div>`;return;}
+  const q={s:ui.addSec,t:g("aTopic"),d:g("aDiff"),passage:g("aPass"),q:g("aQ"),c,a:+document.querySelector("input[name=aAns]:checked").value,x:g("aX"),xl:g("aXL"),origin:"official",testDate:g("aYr")+"-"+g("aMon")};
+  if(q.passage) q.pid="o"+q.testDate+"-"+q.passage.slice(0,40).replace(/[^a-z0-9]/gi,"");
+  try{await addQuestion(q); ui.flash=`<div class="okmsg">Saved. Add another from the same test?</div>`; const keep={t:q.t,m:g("aMon"),y:g("aYr"),p:q.passage}; render(); document.getElementById("aTopic").value=keep.t; document.getElementById("aMon").value=keep.m; document.getElementById("aYr").value=keep.y; document.getElementById("aPass").value=keep.p;}
+  catch(e){msg.innerHTML=`<div class="err">${e&&e.code==="quota_exceeded"?"Your question bank is full. Delete a few questions first.":"Couldn't save. Try again."}</div>`;}
+}
+
+function renderProgress(){
+  let h="";
+  const any=Object.keys(P.stats).length;
+  const done=Object.values(P.stats).reduce((a,s)=>a+s.t,0), right=Object.values(P.stats).reduce((a,s)=>a+s.r,0);
+  h+=`<div class="card"><div class="row"><h2>Your coins</h2><span class="coins"><span class="coin">$</span>${(P.coins||0).toLocaleString()}</span></div>
+   <div class="stats3"><div><b>${done}</b><span class="mute small">questions done</span></div><div><b>${right}</b><span class="mute small">correct</span></div><div><b>${P.best||0}</b><span class="mute small">best streak</span></div></div>
+   <p class="mute small" style="margin-bottom:0">Earn 10 coins per correct answer and 1 per question tried. Streak bonuses double: 3 in a row +5, 6 in a row +10, 9 in a row +20, 12 in a row +40, up to +${STREAK_CAP}. Current streak: ${P.streak||0}.</p></div>`;
+  const today=dayStr(Date.now()), live=P.lastDay===today, ds=live?(P.dayStreak||0):0;
+  const nextD=BADGES.find(b=>b.k==="d"&&(P.bestDay||0)<b.v);
+  const wk=[...Array(7)].map((_,i)=>shiftDay(today,i-6));
+  h+=`<div class="card"><div class="daycard"><span class="flame">🔥</span><div><h2 style="margin:0">${ds}-day streak</h2><div class="mute small">Best: ${P.bestDay||0} days${nextD?` · next badge at ${nextD.v} days`:""}</div></div></div>
+   <div class="week">${wk.map(d=>{const on=(P.days||[]).includes(d);const [y,m,dd]=d.split("-").map(Number);return `<span><i class="${on?"on":""}">${on?"✓":""}</i>${new Date(y,m-1,dd).toLocaleDateString(undefined,{weekday:"short"})}</span>`;}).join("")}</div>
+   <p class="mute small" style="margin-bottom:0">Open the app at least once a day to keep it going. Miss a day and the streak starts over at 1.</p></div>`;
+  const got=BADGES.filter(b=>P.badges[b.id]).length, c=totalCorrect();
+  h+=`<div class="card"><div class="row"><h2>Badges</h2><span class="mute small">${got} of ${BADGES.length}</span></div>`;
+  [["c","Correct answers"],["s","Answer streaks"],["d","Daily streaks"]].forEach(([k,lab])=>{
+    h+=`<h3>${lab}</h3><div class="badges">`;
+    BADGES.filter(b=>b.k===k).forEach(b=>{const have=P.badges[b.id], cur=k==="c"?c:k==="s"?(P.best||0):(P.bestDay||0);
+      h+=`<div class="badge ${have?"":"locked"}"><span class="ic">${b.ic}</span><b>${b.n}</b>${b.d}${have?"":`<div class="mute">${Math.min(cur,b.v)}/${b.v}</div>`}</div>`;});
+    h+=`</div>`;
+  });
+  h+=`</div>`;
+  if(!any) h+=`<div class="card"><h2>Progress</h2><p class="mute">Answer a few questions and your accuracy by topic shows up here.</p></div>`;
+  SECS.forEach(s=>{
+    const rows=BP[s].topics.filter(([t])=>P.stats[s+"."+t]);
+    if(!rows.length) return;
+    const tot=rows.reduce((a,[t])=>{const x=P.stats[s+"."+t];return{r:a.r+x.r,t:a.t+x.t};},{r:0,t:0});
+    h+=`<div class="card"><div class="row"><h2>${BP[s].name}</h2><span class="mute small">${pct(tot.r/tot.t)} of ${tot.t}</span></div>`;
+    rows.forEach(([t,n])=>{const x=P.stats[s+"."+t],a=x.r/x.t;
+      h+=`<div class="topic"><div class="row"><span>${esc(n)}</span><span>${x.r}/${x.t}</span></div><div class="bar"><i style="width:${a*100}%;background:${a>=.8?"var(--ok)":a>=.5?"var(--acc)":"var(--bad)"}"></i></div></div>`;});
+    h+=`</div>`;
+  });
+  if(P.sessions.length){
+    h+=`<div class="card"><h2>Recent sessions</h2>`;
+    P.sessions.forEach(x=>{h+=`<div class="row qitem"><span>${esc(x.label)}${x.timed?" · timed":""}<br><span class="mute small">${new Date(x.d).toLocaleDateString()}</span></span><b>${x.r}/${x.n}</b></div>`;});
+    h+=`</div>`;
+  }
+  if(any) h+=`<div class="card"><button class="linkbtn danger" data-act="reset" id="resetBtn">Reset my progress</button><p class="mute small">Clears scores, coins, answer badges and history. Your saved questions, store items and daily streak stay.</p></div>`;
+  h+=`<p class="mute small">${mode==="db"?"Your progress and questions are saved to your account and private to you.":"Progress is saved in this browser only."}</p>`;
+  V.innerHTML=h;
+}
+
+/* ---------- Question generation (asks Claude) ---------- */
+async function generate(){
+  const btn=document.getElementById("genBtn"), msg=document.getElementById("genMsg");
+  const s=ui.genSec, t=document.getElementById("gt").value; ui.genTopic=t;
+  let sample=null; try{ if(typeof claude!=="undefined"&&claude.use) sample=await claude.use("sample"); }catch(e){}
+  if(!sample){msg.innerHTML=`<div class="err">Question writing isn't available in this view.</div>`;return;}
+  btn.disabled=true; btn.textContent="Writing questions…"; msg.innerHTML="";
+  const rules={
+    english:"Write one original essay passage of 180-260 words. Then write questions about it. For each question that tests a specific word, phrase or punctuation mark, the question field must quote the full sentence from the passage with the tested portion wrapped in [[double brackets]], and the first choice must be exactly \"NO CHANGE\". Questions about the essay as a whole (adding/deleting a sentence, the writer's purpose, placement) need no brackets.",
+    math:"No passage: set passage to an empty string. Mix difficulty from easy to hard. Use exact values (fractions, radicals, π) rather than long decimals. Use plain Unicode for math (x², √, π, ≤), no LaTeX.",
+    reading:"Write one original passage of 400-550 words in the style of an ACT Reading passage (literary narrative, social science, humanities, or natural science). Number nothing. All questions are about this passage.",
+    science:"Write one original passage describing an experiment or two competing scientific viewpoints, with data. Present each data table as plain text with columns separated by | and one row per line, first row as headers. All questions are about this passage and must be answerable from the data or text."
+  }[s];
+  const prompt=`You write ORIGINAL practice questions for the enhanced ACT (the format used since spring 2025). Never copy or closely paraphrase real ACT questions.
+Section: ${BP[s].name}
+Topic to test: ${topicName(s,t)}
+Difficulty: ${(ui.genDiff||"mix")==="mix"?"make 2 easy, 2 medium and 1 hard question":"make all 5 questions "+(ui.genDiff).toUpperCase()}. Easy = a single, common rule or step most students get right. Medium = two steps or a classic trap answer. Hard = like the last questions of a real ACT section: multi-step reasoning, less common rules, or very tempting wrong answers. Tag each question with "difficulty": "easy", "medium" or "hard".
+Write exactly 5 multiple-choice questions on this topic with exactly 4 answer choices each, one clearly correct answer, and plausible wrong answers that reflect common student mistakes.
+${rules}
+For each question write two explanations in plain, friendly language for a high school student:
+- "explanation_short": 1-2 sentences saying why the correct answer is right (shown when the student gets it right).
+- "explanation_long": 3-5 sentences explaining why the correct answer is right, why each tempting wrong answer is wrong (the likely mistake), and a tip for spotting this question type (shown when the student gets it wrong).
+Return ONLY JSON in this shape: {"passage": string, "questions": [{"question": string, "choices": [string, string, string, string], "answer": 0-3 index of correct choice, "difficulty": "easy"|"medium"|"hard", "explanation_short": string, "explanation_long": string}]}`;
+  try{
+    const out=await sample.json(prompt,{modelTier:"default"});
+    const qs=(out&&Array.isArray(out.questions)?out.questions:[]).filter(q=>q&&q.question&&Array.isArray(q.choices)&&q.choices.length===4&&Number.isInteger(q.answer)&&q.answer>=0&&q.answer<4);
+    if(!qs.length) throw {code:"bad"};
+    const pid="g"+Date.now(), passage=typeof out.passage==="string"?out.passage:"";
+    for(const q of qs){ await addQuestion({s,t,pid:passage?pid:"",passage,q:String(q.question),c:q.choices.map(String),a:q.answer,d:LEVELS[q.difficulty]?q.difficulty:((ui.genDiff&&ui.genDiff!=="mix")?ui.genDiff:"medium"),x:String(q.explanation_short||q.explanation||""),xl:String(q.explanation_long||""),origin:"generated"}); }
+    ui.flash=`<div class="okmsg">Added ${qs.length} new ${esc(topicName(s,t).split(" (")[0])} questions to your bank.</div>`;
+    ui.secs=[s]; if(!session) render();
+  }catch(e){
+    btn.disabled=false; btn.textContent="Write 5 new questions";
+    msg.innerHTML=`<div class="err">${e&&e.code==="not_granted"?"Question writing wasn't allowed. You can still practice and add your own.":e&&e.code==="rate_limited"?"Too many requests right now. Try again in a minute.":e&&e.code==="quota_exceeded"?"Your question bank is full. Delete some questions first.":"Couldn't write questions this time. Try again."}</div>`;
+  }
+}
+
+/* ---------- Events ---------- */
+document.getElementById("tabs").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;tab=b.dataset.tab;render();window.scrollTo(0,0);});
+let resetArmed=false, delArmed=null;
+V.addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  const d=b.dataset;
+  if(d.sec){ui.secs=[d.sec];render();}
+  else if(d.len){ui.len=+d.len;render();}
+  else if(d.mode){ui.mode=d.mode;render();}
+  else if(d.diff){ui.diff=d.diff;render();}
+  else if(d.gdiff){ui.genDiff=d.gdiff;render();}
+  else if(d.adiff){ui.addDiff=d.adiff;render();}
+  else if(d.timed){ui.timed=d.timed==="1";render();}
+  else if(d.gsec){ui.genSec=d.gsec;ui.genTopic="";render();}
+  else if(d.asec){ui.addSec=d.asec;render();}
+  else if(d.pick!=null){answer(+d.pick);}
+  else if(d.buy){
+    if(buyArmed!==d.buy){buyArmed=d.buy;render();return;}
+    buyArmed=null;
+    const [kind,id]=d.buy.split(":"), it=SHOP[kind].find(x=>x.id===id);
+    if(!it||owns(kind,id)||(P.coins||0)<it.cost){render();return;}
+    P.coins-=it.cost; P.owned.push(d.buy); P.look[kind]=id;
+    saveProfile(); applyLook(); showCoins(); render(); toast("🛍️","Unlocked: "+it.n,"Now in use");
+  }
+  else if(d.use){
+    const [kind,id]=d.use.split(":"); if(!owns(kind,id)) return;
+    buyArmed=null; P.look[kind]=id; saveProfile(); applyLook(); render();
+  }
+  else if(d.del){
+    if(delArmed!==d.del){delArmed=d.del;b.textContent="Tap again to delete";return;}
+    delArmed=null;b.disabled=true;deleteQuestion(d.del).catch(()=>{b.disabled=false;b.textContent="Couldn't delete";});
+  }
+  else if(d.act){
+    switch(d.act){
+      case "smart": ui.secs=["smart"]; ui.diff="any"; startSession("smart"); break;
+      case "start": startSession(ui.secs[0]); break;
+      case "next": next(); break;
+      case "quit": if(session.ans.length){session.qs=session.qs.slice(0,session.i+(session.picked!=null?1:0));session.i=session.qs.length-1;session.picked=0;next();}else{session=null;render();} break;
+      case "again": session=null; startSession(ui.secs[0]); break;
+      case "done": session=null; render(); break;
+      case "gen": generate(); break;
+      case "save": saveOfficial(); break;
+      case "reset":
+        if(!resetArmed){resetArmed=true;b.textContent="Tap again to clear all scores";return;}
+        resetArmed=false; P={stats:{},seen:{},sessions:[],coins:0,streak:0,best:0,badges:{},owned:P.owned,look:P.look,lastDay:P.lastDay,dayStreak:P.dayStreak,bestDay:P.bestDay,days:P.days}; checkBadges(false); saveProfile(); showCoins(); render(); break;
+    }
+  }
+});
+V.addEventListener("change",e=>{
+  if(e.target.id==="gt") ui.genTopic=e.target.value;
+  if(e.target.id==="pName"){const v=e.target.value.trim().slice(0,24); if(v!==P.look.name){P.look.name=v; saveProfile();}}
+});
+
+render();
+init();
+</script>
+</body>
+</html>
