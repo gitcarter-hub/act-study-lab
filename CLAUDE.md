@@ -24,8 +24,13 @@ publishing it as a public website.
   (5, 10, 20 … capped at 640).
 - **Daily streak:** counts consecutive local days the app was opened.
 - **STEM tab:** Math + Science practice (the enhanced ACT's STEM score), weak spots or full mix.
-- 200 built-in ORIGINAL questions, 50 per section (`BUILTIN`, passages in `PASS`). English is
-  passage-based (essays with [[underlined]] portions, NO CHANGE first). Never add real ACT test
+- 204 built-in ORIGINAL questions (`BUILTIN`, passages in `PASS`): English 50, Math 50, Science 50,
+  Reading 54 (6 passages x 9 questions, like the real test). English is passage-based (essays with
+  [[underlined]] portions, NO CHANGE first, plus a few "NOT/LEAST acceptable" items). Reading passages
+  are ~550-700 words, start with a `~ ` source heading marking them as original, and one has a data
+  table. Passages can draw graphs: `{{line Figure 1; x=..; y=..; Name: x,y x,y}}` or
+  `{{bar Figure 1; x=..; y=..; Label: value; ...}}` (rendered by `figure()`). Topic mixes match ACT's
+  published category ranges (see the `BP` comment). Never add real ACT test
   questions to the built-in bank. They're copyrighted; users may add their own copies only to
   their own private bank.
 - **Solved questions are replaced (per user):** a correct answer retires the question (`P.retired`);
