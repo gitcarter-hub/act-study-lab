@@ -10,6 +10,11 @@ publishing it as a public website.
   choices everywhere). Topic sizes start from ACT's published blueprint (`BP` object) and blend in
   the topics of official questions the user logs once there are 10+ in a section. A priority list
   ranks topics by frequency × the user's miss rate.
+- **Score check (Plan tab):** Quick (15) or Thorough (30) mixed quiz in ACT order, optional Science
+  (+5/+10). No feedback until the end. `assessScore()` weights hard questions more, maps weighted
+  % correct to 1–36 with `SCORE_CURVE` (approximate, shaped like typical ACT tables), and reports
+  a likely range; Composite = avg of E/M/R, STEM = avg of M/S. History in `P.assess`. Doesn't
+  retire questions. It's an estimate, never presented as an official score.
 - **Practice tab:** Smart mix (weighted by priority), Mixed (all sections, random), single
   sections; difficulty filter (easy/medium/hard); 5/10/20 questions; optional real-ACT timer.
   Right answer → 1–2 sentence explanation (`x`). Wrong answer → 3–5 sentence explanation

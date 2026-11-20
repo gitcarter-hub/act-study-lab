@@ -128,6 +128,7 @@ table.grid td:first-child,table.grid th:first-child{text-align:left}
 .kbd{display:none;margin-top:8px}
 @media (hover:hover) and (pointer:fine){.kbd{display:block}}
 @media (min-width:1000px){main.wide{max-width:1180px}main.wide .qgrid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:22px;align-items:start}main.wide .pcol{position:sticky;top:8px}main.wide .passage{max-height:calc(100vh - 150px)}main.wide .prow{display:none}}
+.choice.sel{border-color:var(--acc);background:var(--acc2)}
 </style>
 </head>
 <body>
@@ -904,13 +905,13 @@ let db=null, uid=null, profRef=null, qCol=null, mode="loading";
 let tab="plan", session=null, timerId=null;
 let ui = {secs:["smart"], mode:"focus", len:10, timed:false, diff:"any", genSec:"english", genTopic:"", addSec:"english", flash:""};
 /* Remember practice settings between visits (this browser only). */
-const UKEY="actlab.ui", UI_KEEP=["secs","mode","len","timed","diff","stemMode","genSec","genDiff"];
+const UKEY="actlab.ui", UI_KEEP=["secs","mode","len","timed","diff","stemMode","genSec","genDiff","aLen","aSci"];
 try{ const s=JSON.parse(localStorage.getItem(UKEY)||"null"); if(s) UI_KEEP.forEach(k=>{ if(k in s) ui[k]=s[k]; }); }catch(e){}
 if(!Array.isArray(ui.secs)||!["smart","mixed"].concat(SECS).includes(ui.secs[0])) ui.secs=["smart"];
 if(![5,10,20,0].includes(ui.len)) ui.len=10;
 if(!["any","easy","medium","hard"].includes(ui.diff)) ui.diff="any";
 if(!SECS.includes(ui.genSec)) ui.genSec="english";
-ui.timed=!!ui.timed;
+ui.timed=!!ui.timed; if(ui.aLen!=="full") ui.aLen="quick"; ui.aSci=!!ui.aSci;
 function saveUI(){ try{ const o={}; UI_KEEP.forEach(k=>o[k]=ui[k]); localStorage.setItem(UKEY,JSON.stringify(o)); }catch(e){} }
 /* Keep the session you're in if the page reloads or the phone closes the tab. */
 const SKEY="actlab.session";
@@ -1534,8 +1535,8 @@ function render(){
   saveUI(); saveSession();
   if(typeof location!=="undefined"&&location.hash==="#check"){ renderCheckReport(); return; }
   document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
-  if(tab==="plan") renderPlan();
-  else if(tab==="practice") session&&session.home!=="stem"? (session.done?renderSummary():renderQuestion()) : renderSetup();
+  if(tab==="plan") session&&session.home==="plan"? (session.done?renderAssessResult():renderAssessQ()) : renderPlan();
+  else if(tab==="practice") session&&(session.home||"practice")==="practice"? (session.done?renderSummary():renderQuestion()) : renderSetup();
   else if(tab==="stem") session&&session.home==="stem"? (session.done?renderSummary():renderQuestion()) : renderStem();
   else if(tab==="add") renderAdd();
   else if(tab==="store") renderStore();
@@ -1567,9 +1568,151 @@ function renderStore(){
   V.innerHTML=h;
 }
 
+
+/* ---------- Score check: a short mixed quiz that estimates ACT scores ----------
+   Questions come in ACT order (English, Math, Reading, optional Science), balanced across easy /
+   medium / hard, with passage questions kept together. No feedback until the end. The estimate
+   weights harder questions more, converts the weighted percent correct to a 1-36 scale with an
+   approximate curve shaped like typical ACT conversion tables, and reports a likely range that
+   gets narrower with more questions. Enhanced ACT: Composite = average of English, Math and
+   Reading; STEM = average of Math and Science. It's an estimate, not an official score. */
+const ASSESS_W={easy:1,medium:1.5,hard:2};
+const SCORE_CURVE=[[0,1],[0.2,11],[0.35,15],[0.5,19],[0.65,23],[0.75,26],[0.85,29],[0.92,32],[0.97,35],[1,36]];
+function curveScore(p){
+  p=Math.max(0,Math.min(1,p));
+  for(let k=1;k<SCORE_CURVE.length;k++){ const [p1,s1]=SCORE_CURVE[k]; if(p<=p1){ const [p0,s0]=SCORE_CURVE[k-1]; return s0+(s1-s0)*(p-p0)/(p1-p0); } }
+  return 36;
+}
+const clamp36=v=>Math.max(1,Math.min(36,Math.round(v)));
+function aShuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+/* take k questions, mixing difficulty levels and preferring ones not seen yet */
+function aBalance(list,k){
+  const by={easy:[],medium:[],hard:[]};
+  aShuffle(list).sort((x,y)=>(P.seen[x.id]?1:0)-(P.seen[y.id]?1:0)).forEach(q=>by[levelOf(q)].push(q));
+  const out=[], order=["medium","easy","hard"]; let r=0;
+  while(out.length<k&&(by.easy.length||by.medium.length||by.hard.length)){ const lv=order[r++%3]; if(by[lv].length) out.push(by[lv].shift()); }
+  return out;
+}
+/* passage sections: whole passage sets, `sets` of them, `per` questions each, kept in passage order */
+function aFromPassages(s,sets,per){
+  const pool=bank().filter(q=>q.s===s), groups={};
+  pool.forEach(q=>{ const k=pkey(q)||q.id; (groups[k]=groups[k]||[]).push(q); });
+  const keys=aShuffle(Object.keys(groups)).sort((a,b)=>{
+    const big=k=>groups[k].length>=per?0:1, fresh=k=>groups[k].filter(q=>!P.seen[q.id]).length;
+    return big(a)-big(b)||fresh(b)-fresh(a);
+  });
+  const out=[];
+  for(const k of keys){
+    if(out.length>=sets*per) break;
+    const take=aBalance(groups[k],Math.min(per,sets*per-out.length));
+    out.push(...groups[k].filter(q=>take.includes(q)));
+  }
+  return out;
+}
+function assessPick(len,sci){
+  const per=len==="full"?10:5, sets=len==="full"?2:1, pp=Math.ceil(per/sets);
+  let qs=aFromPassages("english",sets,pp).concat(aBalance(bank().filter(q=>q.s==="math"),per), aFromPassages("reading",sets,pp));
+  if(sci) qs=qs.concat(aFromPassages("science",sets,pp));
+  return qs;
+}
+function startAssess(){
+  const qs=assessPick(ui.aLen,ui.aSci); if(!qs.length) return;
+  session={qs,i:0,ans:[],picked:null,sel:null,elim:[],timed:false,end:0,coins:0,label:"Score check",home:"plan",assess:{len:ui.aLen,sci:!!ui.aSci,start:Date.now()}};
+  tab="plan"; render(); window.scrollTo(0,0);
+}
+function assessNext(){
+  if(!session||!session.assess||session.sel==null) return;
+  const q=session.qs[session.i], i=session.sel, right=i===q.a, k=tk(q);
+  const st=P.stats[k]||{r:0,t:0}; P.stats[k]={r:st.r+(right?1:0),t:st.t+1};
+  const se=P.seen[q.id]||{r:0,t:0}; P.seen[q.id]={r:se.r+(right?1:0),t:se.t+1};
+  const gain=COIN_TRY+(right?COIN_RIGHT:0); P.coins=(P.coins||0)+gain; session.coins+=gain;
+  session.ans.push({q,right,gain,bonus:0,pick:i,note:""});
+  session.sel=null; session.elim=[]; session.i++;
+  if(session.i>=session.qs.length) finishAssess();
+  checkBadges(true); saveProfile(); showCoins(gain); render(); window.scrollTo(0,0);
+}
+function assessScore(ans){
+  const res={sec:{}};
+  ["english","math","reading","science"].forEach(s=>{
+    const a=ans.filter(x=>x.q.s===s); if(!a.length) return;
+    let tot=0,got=0; a.forEach(x=>{const w=ASSESS_W[levelOf(x.q)]||1; tot+=w; if(x.right) got+=w;});
+    const p=got/tot, pv=Math.min(0.9,Math.max(0.1,p)), se=Math.sqrt(pv*(1-pv)/a.length);
+    const lo=curveScore(p-se), hi=curveScore(p+se), mid=curveScore(p);
+    res.sec[s]={score:clamp36(mid),lo:clamp36(lo),hi:clamp36(hi),se:(hi-lo)/2,r:a.filter(x=>x.right).length,n:a.length};
+  });
+  const S=res.sec;
+  if(S.english&&S.math&&S.reading){
+    const c=(S.english.score+S.math.score+S.reading.score)/3, e=Math.sqrt(S.english.se**2+S.math.se**2+S.reading.se**2)/3;
+    res.comp={score:clamp36(c),lo:clamp36(c-e),hi:clamp36(c+e)};
+  }
+  if(S.math&&S.science) res.stem=clamp36((S.math.score+S.science.score)/2);
+  return res;
+}
+function finishAssess(){
+  session.done=true;
+  const r=assessScore(session.ans); session.result=r;
+  const sec={}; Object.keys(r.sec).forEach(s=>sec[s]=r.sec[s].score);
+  P.assess=[{d:Date.now(),n:session.ans.length,comp:r.comp?r.comp.score:null,lo:r.comp?r.comp.lo:null,hi:r.comp?r.comp.hi:null,stem:r.stem||null,sec}].concat(P.assess||[]).slice(0,20);
+  P.sessions.unshift({d:Date.now(),label:"Score check",r:session.ans.filter(a=>a.right).length,n:session.ans.length,timed:false});
+  P.sessions=P.sessions.slice(0,30);
+}
+function assessCard(){
+  const last=(P.assess||[])[0], len=ui.aLen==="full"?"full":"quick", n=(len==="full"?30:15)+(ui.aSci?(len==="full"?10:5):0);
+  return `<div class="card"><h2>Estimate my ACT score</h2>
+   <p class="mute">A mixed quiz in ACT order: English, Math and Reading (the three sections in the Composite), plus Science if you want a STEM score. You won't see answers until the end, just like the real test.</p>
+   ${last&&last.comp?`<div class="row"><span>Your last estimate (${new Date(last.d).toLocaleDateString()})</span><b>${last.comp} <span class="mute small">(${last.lo}–${last.hi})</span></b></div>`:""}
+   <label>Length</label><div class="chips"><button class="chip ${len==="quick"?"on":""}" data-alen="quick">Quick · 15 questions</button><button class="chip ${len==="full"?"on":""}" data-alen="full">Thorough · 30 questions</button></div>
+   <label>Science</label><div class="chips"><button class="chip ${!ui.aSci?"on":""}" data-asci="0">Skip</button><button class="chip ${ui.aSci?"on":""}" data-asci="1">Include (+${len==="full"?10:5})</button></div>
+   <p class="mute small">${n} questions, about ${len==="full"?(ui.aSci?"45–55":"35–45"):(ui.aSci?"20–25":"15–20")} minutes. Thorough gives a more precise estimate.</p>
+   <button class="btn" data-act="astart">Start score check</button></div>`;
+}
+function renderAssessQ(){
+  clearInterval(timerId);
+  const q=session.qs[session.i], pass=passageOf(q), sel=session.sel, last=session.i+1>=session.qs.length;
+  if(V.classList) V.classList.toggle("wide",!!pass);
+  let h=`<div class="card"><div class="row"><span class="mute small">Score check · ${session.i+1} of ${session.qs.length} · ${esc(BP[q.s].name)}</span><button class="linkbtn" data-act="quit">End</button></div>
+   <div class="bar" style="margin:6px 0 10px"><i style="width:${(session.i/session.qs.length*100).toFixed(1)}%;background:var(--acc)"></i></div>`;
+  if(pass) h+=`<div class="qgrid"><div class="pcol"><details open><summary>Passage</summary><div class="passage${session.pfull?" full":""}">${rich(pass)}</div>
+    <div class="prow"><button class="linkbtn" data-act="pfull">${session.pfull?"Shrink passage":"Expand passage"}</button>${session.pfull?`<button class="linkbtn" data-act="jumpq">Jump to question ↓</button>`:""}</div></details></div><div class="qcol">`;
+  h+=`<div class="q" id="qtext">${rich(q.q)}</div>`;
+  const elim=session.elim||[];
+  q.c.forEach((c,i)=>{
+    const out=elim.includes(i);
+    h+=`<div class="crow"><button class="choice${sel===i?" sel":""}${out?" out":""}" data-pick="${i}" aria-pressed="${sel===i}"><b>${L[i]}</b><span>${rich(c).replace(/^<p>|<\/p>$/g,"")}</span></button><button class="elim${out?" on":""}" data-elim="${i}" aria-pressed="${out}" aria-label="${out?"Bring back":"Cross out"} choice ${L[i]}" title="${out?"Bring back":"Cross out"} this choice">${out?"↺":"✕"}</button></div>`;
+  });
+  h+=`<button class="btn" data-act="anext" ${sel==null?"disabled":""}>${last?"See my estimate":"Next"}</button>`;
+  if(session.i===0) h+=`<p class="mute small">Tap a choice, then Next. You can change your choice until you tap Next.</p>`;
+  if(pass) h+=`</div></div>`;
+  h+=`</div>`;
+  V.innerHTML=h; saveSession();
+}
+function renderAssessResult(){
+  const r=session.result||assessScore(session.ans), S=r.sec, prev=(P.assess||[])[1];
+  const row=(s,label)=>S[s]?`<div class="row"><span>${label} <span class="mute small">${S[s].r}/${S[s].n} correct</span></span><b>${S[s].score} <span class="mute small">(${S[s].lo}–${S[s].hi})</span></b></div>`:"";
+  let h=`<div class="card"><h2>Your score estimate</h2>`;
+  if(r.comp) h+=`<div class="mute small">Estimated Composite</div><div class="big">${r.comp.score}</div><p class="mute">Likely range: <b>${r.comp.lo}–${r.comp.hi}</b>${prev&&prev.comp?` · last time ${prev.comp}`:""}</p>`;
+  else h+=`<p class="mute">You ended before every Composite section was covered, so here are the sections you finished.</p>`;
+  h+=row("english","English")+row("math","Math")+row("reading","Reading")+row("science","Science");
+  if(r.stem) h+=`<div class="row"><span>STEM <span class="mute small">(Math + Science)</span></span><b>${r.stem}</b></div>`;
+  h+=`<div class="coinline"><span class="coin">$</span>+${session.coins||0} coins</div>
+   <p class="mute small">This is an estimate, not an official ACT score. It converts your percent correct (harder questions count more) using a curve shaped like typical ACT score tables. With ${session.ans.length} questions the range is wide; the Thorough check, or taking it again later, narrows it. On the enhanced ACT, the Composite is the average of English, Math and Reading.</p>
+   <div style="display:grid;gap:8px;margin-top:10px">${Object.keys(S).length?`<button class="btn" data-act="aweak">Practice my weakest section</button>`:""}<button class="btn ghost" data-act="astart">Take another score check</button><button class="btn ghost" data-act="adone">Done</button></div></div>`;
+  const missed=session.ans.filter(a=>!a.right);
+  if(missed.length){
+    h+=`<div class="card"><h2>Review what you missed</h2>`;
+    missed.forEach(a=>{h+=`<div class="qitem"><div class="mute small">${esc(BP[a.q.s].name)} · ${esc(topicName(a.q.s,a.q.t))}</div>${rich(a.q.q)}<div>You picked <b>${L[a.pick]}</b>. <b>Answer ${L[a.q.a]}:</b> ${rich(a.q.c[a.q.a]).replace(/^<p>|<\/p>$/g,"")}</div><div class="mute small">${esc(longExpl(a.q,a.pick)||a.q.x||"")}</div></div>`;});
+    h+=`</div>`;
+  }
+  V.innerHTML=h; saveSession();
+}
+function assessHistoryCard(){
+  const A=(P.assess||[]).filter(a=>a.comp); if(!A.length) return "";
+  return `<div class="card"><h2>Score estimates</h2>${A.slice(0,6).map(a=>`<div class="row"><span>${new Date(a.d).toLocaleDateString()} <span class="mute small">${a.n} questions · E ${a.sec.english??"–"} · M ${a.sec.math??"–"} · R ${a.sec.reading??"–"}${a.sec.science?` · S ${a.sec.science}`:""}</span></span><b>${a.comp} <span class="mute small">(${a.lo}–${a.hi})</span></b></div>`).join("")}</div>`;
+}
+
 function renderPlan(){
   const pri=priorities(["english","math","reading"]).slice(0,5);
-  let h=`<div class="card"><h2>Your next 5 priorities</h2>
+  let h=assessCard()+`<div class="card"><h2>Your next 5 priorities</h2>
   <p class="mute">Ranked by how often each topic shows up on the ACT × how often you miss it. This updates every time you practice.</p>`;
   pri.forEach((x,i)=>{const a=rawAcc(x.s+"."+x.t);
     h+=`<div class="pri"><span class="num">${i+1}</span><div><div><b>${esc(x.name)}</b></div><div class="mute small">${BP[x.s].name} · about ${Math.max(1,Math.round(x.w/100*BP[x.s].count))} questions per test · ${a==null?"not practiced yet":"you're at "+pct(a)}</div></div></div>`;});
@@ -1665,6 +1808,7 @@ function startSession(key){
   tab=session.home; render();
 }
 function renderQuestion(){
+  if(session&&session.assess) return renderAssessQ();
   clearInterval(timerId);
   const q=session.qs[session.i], pass=passageOf(q), answered=session.picked!=null;
   const lv=levelOf(q);
@@ -1724,6 +1868,7 @@ Write a clear explanation in 3 to 5 sentences, in plain friendly language for a 
   if(sameQ(q,picked)) renderQuestion();
 }
 function answer(i){
+  if(session.assess){ session.sel=i; renderAssessQ(); return; }
   if(session.picked!=null) return;
   const q=session.qs[session.i]; session.picked=i;
   const right=i===q.a, k=tk(q);
@@ -1865,6 +2010,7 @@ function renderProgress(){
      ${solved||made?`<div style="margin-top:10px"><button class="linkbtn danger" data-act="restorebank" id="restoreBtn">Restore the ${BUILTIN.length} starting questions</button><p class="mute small">Brings back every starting question and removes the generated ones. Scores, coins and your own added questions stay.</p></div>`:""}</div>`;
   }
   if(any) h+=`<div class="card"><button class="linkbtn danger" data-act="reset" id="resetBtn">Reset my progress</button><p class="mute small">Clears scores, coins, answer badges and history. Your saved questions, store items and daily streak stay.</p></div>`;
+  h+=assessHistoryCard();
   h+=`<div class="card"><h2>Back up or move your progress</h2>
    <p class="mute small">Your coins, scores, store items and question bank live in this browser. Copy a backup code to keep them safe, or paste it on another device (like your phone) to move everything there.</p>
    <button class="btn ghost" data-act="backup">Copy backup code</button>
@@ -1938,6 +2084,8 @@ V.addEventListener("click",e=>{
   else if(d.timed){ui.timed=d.timed==="1";render();}
   else if(d.gsec){ui.genSec=d.gsec;ui.genTopic="";render();}
   else if(d.asec){ui.addSec=d.asec;render();}
+  else if(d.alen){ui.aLen=d.alen;render();}
+  else if(d.asci){ui.aSci=d.asci==="1";render();}
   else if(d.pick!=null){answer(+d.pick);}
   else if(d.elim!=null){ const i=+d.elim, el=session.elim||[]; session.elim=el.includes(i)?el.filter(x=>x!==i):el.concat(i); renderQuestion(); }
   else if(d.buy){
@@ -1961,10 +2109,18 @@ V.addEventListener("click",e=>{
       case "smart": ui.secs=["smart"]; ui.diff="any"; startSession("smart"); break;
       case "start": startSession(ui.secs[0]); break;
       case "next": next(); break;
-      case "quit": if(session.ans.length){session.qs=session.qs.slice(0,session.i+(session.picked!=null?1:0));session.i=session.qs.length-1;session.picked=0;next();}else{session=null;render();} break;
+      case "quit": if(session.assess){ if(session.ans.length){ session.qs=session.qs.slice(0,session.ans.length); session.i=session.qs.length; finishAssess(); saveProfile(); } else session=null; render(); window.scrollTo(0,0); break; }
+        if(session.ans.length){session.qs=session.qs.slice(0,session.i+(session.picked!=null?1:0));session.i=session.qs.length-1;session.picked=0;next();}else{session=null;render();} break;
       case "stemstart": startSession("stem"); break;
       case "again": {const k=session&&session.home==="stem"?"stem":ui.secs[0]; session=null; startSession(k);} break;
       case "done": session=null; render(); break;
+      case "astart": session=null; startAssess(); break;
+      case "anext": assessNext(); break;
+      case "adone": session=null; tab="plan"; render(); window.scrollTo(0,0); break;
+      case "aweak": {
+        const S=(session.result||assessScore(session.ans)).sec, ks=Object.keys(S); if(!ks.length) break;
+        const w=ks.sort((a,b)=>S[a].score-S[b].score)[0];
+        session=null; ui.secs=[w]; ui.mode="focus"; ui.diff="any"; startSession(w); window.scrollTo(0,0); } break;
       case "redo": {
         const m=session.ans.filter(a=>!a.right).map(a=>a.q); if(!m.length) break;
         session={qs:m,i:0,ans:[],picked:null,elim:[],timed:false,end:0,label:session.label.replace(/ · Missed$/,"")+" · Missed",home:session.home||"practice"};
@@ -2003,6 +2159,11 @@ document.addEventListener("keydown",e=>{
   if(!session||session.done||tab!==session.home) return;
   if(typeof location!=="undefined"&&location.hash==="#check") return;
   const k=String(e.key||"").toLowerCase(), map={a:0,b:1,c:2,d:3,"1":0,"2":1,"3":2,"4":3};
+  if(session.assess){
+    if(k in map){ e.preventDefault(); answer(map[k]); }
+    else if(session.sel!=null&&(k==="enter"||k==="n"||k==="arrowright")){ if(k==="enter"&&t&&t.tagName==="BUTTON") return; e.preventDefault(); assessNext(); }
+    return;
+  }
   if(session.picked==null&&k in map){ e.preventDefault(); answer(map[k]); }
   else if(session.picked!=null&&(k==="enter"||k==="n"||k==="arrowright")){
     if(k==="enter"&&t&&t.tagName==="BUTTON") return;   // the focused button handles Enter itself
