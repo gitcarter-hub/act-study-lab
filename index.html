@@ -96,6 +96,11 @@ table.grid td:first-child,table.grid th:first-child{text-align:left}
 .f-silver{border-color:#b9c2cc}
 .f-gold{border-color:#e9b934}
 .f-emerald{border-color:#1fae73}
+.f-ruby{border-color:#e0115f}
+.f-sapphire{border-color:#2f6fd6}
+.f-neon{border-color:#2ee88a;box-shadow:0 0 9px #2ee88a}
+.f-galaxy{background:linear-gradient(var(--card),var(--card)) padding-box,conic-gradient(#3b0a78,#7b2ff7,#2d8cff,#00d4ff,#7b2ff7,#3b0a78) border-box}
+.f-legend{background:linear-gradient(var(--card),var(--card)) padding-box,conic-gradient(#fff3b0,#e9b934,#a8740a,#ffe680,#e9b934,#fff3b0) border-box;box-shadow:0 0 10px rgba(233,185,52,.65)}
 .f-rainbow{background:linear-gradient(var(--card),var(--card)) padding-box,conic-gradient(#ff4d4d,#ffa31a,#ffe14d,#3ccf6e,#3d8bff,#a05cff,#ff4d4d) border-box}
 .me{display:flex;align-items:center;gap:8px}
 .shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
@@ -129,6 +134,11 @@ table.grid td:first-child,table.grid th:first-child{text-align:left}
 @media (hover:hover) and (pointer:fine){.kbd{display:block}}
 @media (min-width:1000px){main.wide{max-width:1180px}main.wide .qgrid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:22px;align-items:start}main.wide .pcol{position:sticky;top:8px}main.wide .passage{max-height:calc(100vh - 150px)}main.wide .prow{display:none}}
 .choice.sel{border-color:var(--acc);background:var(--acc2)}
+.vault .keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:260px;margin:12px auto}
+.vault .keys button{font:inherit;font-size:20px;font-weight:600;padding:14px 0;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.vault .dots{display:flex;gap:12px;justify-content:center;margin:8px 0;font-size:22px;letter-spacing:2px}
+.vault .grant{font-size:20px;padding:18px}
+#coins{cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 </style>
 </head>
 <body>
@@ -770,12 +780,12 @@ const XL = {
 
 /* ---------- State ---------- */
 let P = {stats:{}, seen:{}, sessions:[], coins:0, streak:0, best:0, badges:{}, owned:[], look:{theme:"classic",avatar:"owl",frame:"none",name:""}};
-/* Coins: 10 per correct answer, 1 for every question tried.
-   Streak bonus compounds: every 3 in a row pays a bonus that doubles each time
-   (3 → +5, 6 → +10, 9 → +20, 12 → +40 …), capped at +640. */
-const COIN_RIGHT=10, COIN_TRY=1, STREAK_BASE=5, STREAK_CAP=640;
-const streakBonus = s => (s>0 && s%3===0) ? Math.min(STREAK_BASE*2**(s/3-1), STREAK_CAP) : 0;
-const nextBonusAt = s => { const n=(Math.floor(s/3)+1)*3; return {n, b:streakBonus(n)}; };
+/* Coins: 5 for each correct answer, nothing for a wrong one.
+   The streak counts from the 1st right answer. Doubling starts on the 3rd in a row:
+   1st → 5, 2nd → 5, 3rd → 10, 4th → 20, 5th → 40 … capped at 2,560 per question
+   (reached at 11 in a row). A wrong answer resets the streak. */
+const COIN_BASE=5, COIN_CAP=2560;
+const coinsFor = s => s<=2 ? COIN_BASE : Math.min(COIN_BASE*2**(s-2), COIN_CAP);   // s = streak including this answer
 
 /* Store */
 const THEMES=[
@@ -786,17 +796,27 @@ const THEMES=[
   {id:"berry",n:"Berry",cost:200,l:"#c2185b",d:"#ff6fa8"},
   {id:"grape",n:"Grape",cost:250,l:"#6d3ae0",d:"#b38cff"},
   {id:"midnight",n:"Midnight",cost:400,l:"#2b3bc4",d:"#8f9cff",bgl:"#e9ecfb",bgd:"#080b24"},
-  {id:"gold",n:"Royal Gold",cost:750,l:"#9a6a00",d:"#f2c94c",bgl:"#fbf6e6",bgd:"#1a1508"}
+  {id:"gold",n:"Royal Gold",cost:750,l:"#9a6a00",d:"#f2c94c",bgl:"#fbf6e6",bgd:"#1a1508"},
+  {id:"aurora",n:"Aurora",cost:2500,l:"#00796b",d:"#5eead4",bgl:"#e6f6f3",bgd:"#05201c"},
+  {id:"volcano",n:"Volcano",cost:5000,l:"#c62828",d:"#ff7d66",bgl:"#fdeeec",bgd:"#1f0907"},
+  {id:"galaxy",n:"Galaxy",cost:10000,l:"#7b1fa2",d:"#d39bff",bgl:"#f4ebfb",bgd:"#110522"},
+  {id:"diamond",n:"Diamond",cost:25000,l:"#0369a1",d:"#9be3ff",bgl:"#eaf6fd",bgd:"#03131e"},
+  {id:"obsidian",n:"Obsidian",cost:50000,l:"#334155",d:"#e2e8f0",bgl:"#eef1f4",bgd:"#040506"}
 ];
 const AVATARS=[
   {id:"owl",e:"🦉",n:"Owl",cost:0},{id:"books",e:"📚",n:"Books",cost:0},{id:"smile",e:"🙂",n:"Smile",cost:0},
   {id:"cat",e:"🐱",n:"Cat",cost:40},{id:"fox",e:"🦊",n:"Fox",cost:60},{id:"tiger",e:"🐯",n:"Tiger",cost:80},
   {id:"rocket",e:"🚀",n:"Rocket",cost:120},{id:"brain",e:"🧠",n:"Big Brain",cost:150},{id:"alien",e:"👽",n:"Alien",cost:200},
-  {id:"unicorn",e:"🦄",n:"Unicorn",cost:300},{id:"dragon",e:"🐉",n:"Dragon",cost:500},{id:"crown",e:"👑",n:"Crown",cost:1000}
+  {id:"unicorn",e:"🦄",n:"Unicorn",cost:300},{id:"dragon",e:"🐉",n:"Dragon",cost:500},{id:"crown",e:"👑",n:"Crown",cost:1000},
+  {id:"lion",e:"🦁",n:"Lion",cost:2000},{id:"octopus",e:"🐙",n:"Octopus",cost:3000},{id:"eagle",e:"🦅",n:"Eagle",cost:5000},
+  {id:"wizard",e:"🧙",n:"Wizard",cost:7500},{id:"robot",e:"🤖",n:"Robot",cost:10000},{id:"planet",e:"🪐",n:"Planet",cost:15000},
+  {id:"trex",e:"🦖",n:"T. rex",cost:25000},{id:"gem",e:"💎",n:"Diamond",cost:50000},{id:"trophy",e:"🏆",n:"Champion",cost:100000}
 ];
 const FRAMES=[
   {id:"none",n:"Plain",cost:0},{id:"silver",n:"Silver",cost:100},{id:"emerald",n:"Emerald",cost:200},
-  {id:"gold",n:"Gold",cost:400},{id:"rainbow",n:"Rainbow",cost:800}
+  {id:"gold",n:"Gold",cost:400},{id:"rainbow",n:"Rainbow",cost:800},
+  {id:"ruby",n:"Ruby",cost:3000},{id:"sapphire",n:"Sapphire",cost:6000},{id:"neon",n:"Neon Glow",cost:12000},
+  {id:"galaxy",n:"Galaxy",cost:30000},{id:"legend",n:"Legendary Gold",cost:75000}
 ];
 const SHOP={theme:THEMES,avatar:AVATARS,frame:FRAMES};
 
@@ -867,7 +887,7 @@ function toast(ic,title,sub){
 function fixCoins(){
   if(typeof P.coins!=="number"){ // backfill from earlier practice
     let r=0,t=0; Object.values(P.stats).forEach(s=>{r+=s.r;t+=s.t;});
-    P.coins=r*COIN_RIGHT+t*COIN_TRY;
+    P.coins=r*COIN_BASE;
   }
   P.streak=P.streak||0; P.best=P.best||0;
   P.badges=Object.assign({},P.badges);
@@ -1534,6 +1554,7 @@ function render(){
   if(V.classList) V.classList.remove("wide");
   saveUI(); saveSession();
   if(typeof location!=="undefined"&&location.hash==="#check"){ renderCheckReport(); return; }
+  if(secret){ renderVault(); return; }
   document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
   if(tab==="plan") session&&session.home==="plan"? (session.done?renderAssessResult():renderAssessQ()) : renderPlan();
   else if(tab==="practice") session&&(session.home||"practice")==="practice"? (session.done?renderSummary():renderQuestion()) : renderSetup();
@@ -1549,8 +1570,8 @@ function shopBtn(kind,it){
   if(cur) return `<button class="ibtn cur" disabled>In use</button>`;
   if(have) return `<button class="ibtn own" data-use="${key}">Use</button>`;
   const short=it.cost-(P.coins||0);
-  if(short>0) return `<button class="ibtn" disabled>🪙 ${it.cost} · need ${short}</button>`;
-  return `<button class="ibtn" data-buy="${key}">${buyArmed===key?"Tap again to buy":"🪙 "+it.cost}</button>`;
+  if(short>0) return `<button class="ibtn" disabled>🪙 ${it.cost.toLocaleString()} · need ${short.toLocaleString()}</button>`;
+  return `<button class="ibtn" data-buy="${key}">${buyArmed===key?"Tap again to buy":"🪙 "+it.cost.toLocaleString()}</button>`;
 }
 function renderStore(){
   const av=AVATARS.find(x=>x.id===P.look.avatar)||AVATARS[0];
@@ -1625,7 +1646,7 @@ function assessNext(){
   const q=session.qs[session.i], i=session.sel, right=i===q.a, k=tk(q);
   const st=P.stats[k]||{r:0,t:0}; P.stats[k]={r:st.r+(right?1:0),t:st.t+1};
   const se=P.seen[q.id]||{r:0,t:0}; P.seen[q.id]={r:se.r+(right?1:0),t:se.t+1};
-  const gain=COIN_TRY+(right?COIN_RIGHT:0); P.coins=(P.coins||0)+gain; session.coins+=gain;
+  const gain=right?COIN_BASE:0; P.coins=(P.coins||0)+gain; session.coins+=gain;   // score check: 5 per correct, no streak doubling
   session.ans.push({q,right,gain,bonus:0,pick:i,note:""});
   session.sel=null; session.elim=[]; session.i++;
   if(session.i>=session.qs.length) finishAssess();
@@ -1826,10 +1847,12 @@ function renderQuestion(){
   if(!answered&&session.i===0) h+=`<p class="mute small kbd">Tip: press A–D to answer and Enter for the next question. Tap ✕ to cross out a choice.</p>`;
   if(answered){
     const right=session.picked===q.a;
-    const last=session.ans[session.ans.length-1], g=last.gain, nb=nextBonusAt(P.streak);
-    h+=`<div class="coinline"><span class="coin">$</span>+${g} coin${g>1?"s":""}${right&&P.streak>=2?` · 🔥 ${P.streak} in a row`:""}${last.bonus?` — streak bonus +${last.bonus}!`:""}</div>
-    <div class="mute small">${right?`Next bonus at ${nb.n} in a row: +${nb.b}`:"Streak reset. 3 in a row starts the bonus again."}</div>
-    ${last.note?`<div class="mute small" style="margin-top:4px">${esc(last.note)}</div>`:""}`;
+    const last=session.ans[session.ans.length-1], g=last.gain, st=P.streak||0, nxt=coinsFor(st+1);
+    h+= right
+      ? `<div class="coinline"><span class="coin">$</span>+${g.toLocaleString()} coins${st>=2?` · 🔥 ${st} in a row`:""}${last.bonus?" — doubled!":""}</div>
+         <div class="mute small">${nxt<=COIN_BASE?`${3-st} more right in a row starts doubling.`:g>=COIN_CAP?`Max payout: +${COIN_CAP.toLocaleString()} per question while your streak lasts.`:`Next right answer: +${nxt.toLocaleString()}`}</div>`
+      : `<div class="coinline">No coins this time</div><div class="mute small">Streak reset. Get 3 right in a row to start doubling again.</div>`;
+    h+=`${last.note?`<div class="mute small" style="margin-top:4px">${esc(last.note)}</div>`:""}`;
     let body;
     if(right) body=esc(q.x||"");
     else {
@@ -1874,9 +1897,8 @@ function answer(i){
   const right=i===q.a, k=tk(q);
   const st=P.stats[k]||{r:0,t:0}; P.stats[k]={r:st.r+(right?1:0),t:st.t+1};
   const se=P.seen[q.id]||{r:0,t:0}; P.seen[q.id]={r:se.r+(right?1:0),t:se.t+1};
-  let gain=COIN_TRY;
-  let bonus=0;
-  if(right){ gain+=COIN_RIGHT; P.streak=(P.streak||0)+1; bonus=streakBonus(P.streak); gain+=bonus; P.best=Math.max(P.best||0,P.streak); }
+  let gain=0, bonus=0;
+  if(right){ P.streak=(P.streak||0)+1; gain=coinsFor(P.streak); bonus=gain>coinsFor(P.streak-1)?gain:0; P.best=Math.max(P.best||0,P.streak); }
   else P.streak=0;
   P.coins=(P.coins||0)+gain; session.coins=(session.coins||0)+gain;
   const note=right?replaceSolved(q):"";
@@ -1969,7 +1991,7 @@ function renderProgress(){
   const done=Object.values(P.stats).reduce((a,s)=>a+s.t,0), right=Object.values(P.stats).reduce((a,s)=>a+s.r,0);
   h+=`<div class="card"><div class="row"><h2>Your coins</h2><span class="coins"><span class="coin">$</span>${(P.coins||0).toLocaleString()}</span></div>
    <div class="stats3"><div><b>${done}</b><span class="mute small">questions done</span></div><div><b>${right}</b><span class="mute small">correct</span></div><div><b>${P.best||0}</b><span class="mute small">best streak</span></div></div>
-   <p class="mute small" style="margin-bottom:0">Earn 10 coins per correct answer and 1 per question tried. Streak bonuses double: 3 in a row +5, 6 in a row +10, 9 in a row +20, 12 in a row +40, up to +${STREAK_CAP}. Current streak: ${P.streak||0}.</p></div>`;
+   <p class="mute small" style="margin-bottom:0">Earn 5 coins for each correct answer (none for a wrong one). Your streak starts with your 1st right answer, and from the 3rd in a row each correct answer pays double the one before: 10, 20, 40, 80 … up to ${COIN_CAP.toLocaleString()} per question. A wrong answer resets the streak. Current streak: ${P.streak||0}.</p></div>`;
   const today=dayStr(Date.now()), live=P.lastDay===today, ds=live?(P.dayStreak||0):0;
   const nextD=BADGES.find(b=>b.k==="d"&&(P.bestDay||0)<b.v);
   const wk=[...Array(7)].map((_,i)=>shiftDay(today,i-6));
@@ -2068,7 +2090,7 @@ Return ONLY JSON in this shape: {"passage": string, "questions": [{"question": s
 }
 
 /* ---------- Events ---------- */
-document.getElementById("tabs").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;if(typeof location!=="undefined"&&location.hash==="#check")history.replaceState(null,"",location.pathname);tab=b.dataset.tab;render();window.scrollTo(0,0);});
+document.getElementById("tabs").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;if(typeof location!=="undefined"&&location.hash==="#check")history.replaceState(null,"",location.pathname);secret=null;tab=b.dataset.tab;render();window.scrollTo(0,0);});
 window.addEventListener("hashchange",()=>render());
 let resetArmed=false, delArmed=null, restoreArmed=false;
 V.addEventListener("click",e=>{
@@ -2084,6 +2106,7 @@ V.addEventListener("click",e=>{
   else if(d.timed){ui.timed=d.timed==="1";render();}
   else if(d.gsec){ui.genSec=d.gsec;ui.genTopic="";render();}
   else if(d.asec){ui.addSec=d.asec;render();}
+  else if(d.vk){vaultKey(d.vk);}
   else if(d.alen){ui.aLen=d.alen;render();}
   else if(d.asci){ui.aSci=d.asci==="1";render();}
   else if(d.pick!=null){answer(+d.pick);}
@@ -2114,6 +2137,8 @@ V.addEventListener("click",e=>{
       case "stemstart": startSession("stem"); break;
       case "again": {const k=session&&session.home==="stem"?"stem":ui.secs[0]; session=null; startSession(k);} break;
       case "done": session=null; render(); break;
+      case "vclose": secret=null; render(); break;
+      case "vgrant": if(secret==="open"){ P.coins=(P.coins||0)+VAULT_GRANT; saveProfile(); showCoins(VAULT_GRANT); renderVault(); } break;
       case "astart": session=null; startAssess(); break;
       case "anext": assessNext(); break;
       case "adone": session=null; tab="plan"; render(); window.scrollTo(0,0); break;
@@ -2152,11 +2177,51 @@ V.addEventListener("click",e=>{
     }
   }
 });
+/* ---------- Secret vault ----------
+   Three steps, in order: 1) set your display name to "Gold Rush" (Store tab),
+   2) tap the coin counter at the top 5 times within 4 seconds, 3) enter the code 2560.
+   Unlocked vault: each tap of the button adds 500 coins. Lasts until you leave the page. */
+let secret=null, vaultCode="", vaultTries=0, coinTaps=[];
+const VAULT_NAME="goldrush", VAULT_CODE="2560", VAULT_GRANT=500;
+function renderVault(){
+  clearInterval(timerId);
+  if(V.classList) V.classList.remove("wide");
+  let h=`<div class="card vault"><div class="row"><h2>🔐 The Vault</h2><button class="linkbtn" data-act="vclose">Close</button></div>`;
+  if(secret==="lock"){
+    h+=`<p class="mute">Enter the 4-digit code.</p><div class="dots" aria-label="${vaultCode.length} of 4 digits entered">${[0,1,2,3].map(i=>i<vaultCode.length?"●":"○").join("")}</div>
+     ${ui.vMsg?`<p class="mute small" style="text-align:center;color:var(--bad)">${esc(ui.vMsg)}</p>`:""}
+     <div class="keys">${["1","2","3","4","5","6","7","8","9","","0","⌫"].map(k=>k?`<button data-vk="${k}" aria-label="${k==="⌫"?"Delete":k}">${k}</button>`:"<span></span>").join("")}</div>`;
+  } else {
+    h+=`<p class="mute">Unlocked. Each tap adds ${VAULT_GRANT} coins.</p>
+     <div class="row"><span>Your coins</span><span class="coins"><span class="coin">$</span>${(P.coins||0).toLocaleString()}</span></div>
+     <div style="margin-top:12px"><button class="btn grant" data-act="vgrant">+${VAULT_GRANT} coins</button></div>`;
+  }
+  V.innerHTML=h+`</div>`;
+}
+function vaultKey(k){
+  ui.vMsg="";
+  if(k==="⌫") vaultCode=vaultCode.slice(0,-1);
+  else if(vaultCode.length<4) vaultCode+=k;
+  if(vaultCode.length===4){
+    if(vaultCode===VAULT_CODE){ secret="open"; vaultTries=0; }
+    else { vaultTries++; vaultCode=""; ui.vMsg="Wrong code."; if(vaultTries>=3){ secret=null; vaultTries=0; ui.vMsg=""; render(); return; } }
+  }
+  renderVault();
+}
+function coinTap(e){
+  const now=Date.now();
+  const box=document.getElementById("pName"); if(box&&typeof box.value==="string"&&box.value.trim()!==P.look.name){ P.look.name=box.value.trim().slice(0,24); saveProfile(); } coinTaps=coinTaps.filter(t=>now-t<4000).concat(now);
+  const name=String((P.look&&P.look.name)||"").toLowerCase().replace(/[^a-z]/g,"");
+  if(coinTaps.length>=5&&name===VAULT_NAME&&!secret){ coinTaps=[]; secret="lock"; vaultCode=""; ui.vMsg=""; renderVault(); window.scrollTo(0,0); }
+}
+// pointerup fires for every tap on phones, even on plain text; older browsers fall back to click
+document.getElementById("coins").addEventListener(typeof window!=="undefined"&&window.PointerEvent?"pointerup":"click",coinTap);
+
 /* Keyboard shortcuts: A-D or 1-4 to answer, Enter / N / → for the next question. */
 document.addEventListener("keydown",e=>{
   if(e.ctrlKey||e.metaKey||e.altKey) return;
   const t=e.target; if(t&&/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
-  if(!session||session.done||tab!==session.home) return;
+  if(secret||!session||session.done||tab!==session.home) return;
   if(typeof location!=="undefined"&&location.hash==="#check") return;
   const k=String(e.key||"").toLowerCase(), map={a:0,b:1,c:2,d:3,"1":0,"2":1,"3":2,"4":3};
   if(session.assess){
@@ -2170,7 +2235,8 @@ document.addEventListener("keydown",e=>{
     e.preventDefault(); next();
   }
 });
-V.addEventListener("input",e=>{ if(e.target.id==="bkIn") ui.restoreText=e.target.value; });
+V.addEventListener("input",e=>{ if(e.target.id==="bkIn") ui.restoreText=e.target.value;
+  if(e.target.id==="pName"){ const v=e.target.value.trim().slice(0,24); if(v!==P.look.name){ P.look.name=v; saveProfile(); } } });
 V.addEventListener("change",e=>{
   if(e.target.id==="gt") ui.genTopic=e.target.value;
   if(e.target.id==="pName"){const v=e.target.value.trim().slice(0,24); if(v!==P.look.name){P.look.name=v; saveProfile();}}

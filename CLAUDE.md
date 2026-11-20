@@ -25,8 +25,11 @@ publishing it as a public website.
 - **Store tab:** coins buy color themes, avatars and avatar frames; display name.
 - **Progress tab:** coins, questions done, best streak, daily-streak card, badges (correct-answer
   totals, answer streaks, daily streaks), accuracy by topic, recent sessions.
-- **Coins:** +10 correct, +1 per attempt; streak bonus every 3 in a row that doubles
-  (5, 10, 20 … capped at 640).
+- **Coins:** +5 per correct answer, 0 for wrong. The streak counts from the 1st correct; from the
+  3rd in a row each correct answer pays double the previous one (10, 20, 40 …), capped at 2,560 per question; a wrong answer
+  resets the streak (`coinsFor`). Score check: flat 5 per correct.
+- **Secret vault (`renderVault`):** name "Gold Rush" → tap the header coin counter 5× in 4 s →
+  code 2560 → button adds 500 coins per tap. Only affects that browser's coins.
 - **Daily streak:** counts consecutive local days the app was opened.
 - **STEM tab:** Math + Science practice (the enhanced ACT's STEM score), weak spots or full mix.
 - 204 built-in ORIGINAL questions (`BUILTIN`, passages in `PASS`): English 50, Math 50, Science 50,
