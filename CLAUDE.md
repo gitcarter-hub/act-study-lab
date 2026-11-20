@@ -37,6 +37,11 @@ publishing it as a public website.
   Math/Science get a new template question (`MATH_T`, `SCI_T`, stored in `P.gen`); English/Reading
   come back when fewer than `REFILL_AT` remain. `AI_ENDPOINT` (empty) is the hook for a future
   server that writes questions. Never put an API key in the page.
+- **Quality of life:** answer eliminator (✕ next to each choice), keyboard shortcuts (A–D / 1–4,
+  Enter / N / →), the current session survives reloads (`actlab.session`), practice settings are
+  remembered (`actlab.ui`), "Redo the N I missed" on the results screen, passage expand/jump on
+  phones and side-by-side passage + question on screens ≥1000px, auto-scroll to the explanation,
+  and a backup code (`ACTLAB1:` + base64 JSON) to move progress between devices (Progress tab).
 - **ACT-style checker (`actCheck`):** every generated/AI question must pass it; built-ins were
   screened with it. Open `index.html#check` for a report of the whole bank.
 

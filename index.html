@@ -119,6 +119,15 @@ table.grid td:first-child,table.grid th:first-child{text-align:left}
 @media (prefers-reduced-motion:reduce){#toast{transition:none}}
 @media (prefers-reduced-motion:reduce){.coins.bump,.pop{animation:none}.pop{display:none}}
 .fig{margin:12px 0}.fig figcaption{font-weight:600;font-size:13px;margin-bottom:4px}.fig svg{display:block;width:100%;max-width:440px;height:auto}.fig .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--mute);margin-top:4px}.fig .legend span{display:inline-flex;align-items:center;gap:5px}.passage .src{font-style:italic;color:var(--mute);font-size:13px}
+.crow{display:flex;gap:6px;margin:7px 0}.crow .choice{margin:0;flex:1;min-width:0}
+.elim{flex:none;width:42px;border:1.5px solid var(--line);border-radius:12px;background:var(--card);color:var(--mute);font-size:15px;font-family:inherit;cursor:pointer}
+.elim.on{color:var(--acc);border-color:var(--acc)}
+.choice.out span,.choice.out b{text-decoration:line-through;opacity:.45}
+.prow{display:flex;gap:16px;justify-content:flex-end;margin:4px 0 2px}
+.passage.full{max-height:none}
+.kbd{display:none;margin-top:8px}
+@media (hover:hover) and (pointer:fine){.kbd{display:block}}
+@media (min-width:1000px){main.wide{max-width:1180px}main.wide .qgrid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:22px;align-items:start}main.wide .pcol{position:sticky;top:8px}main.wide .passage{max-height:calc(100vh - 150px)}main.wide .prow{display:none}}
 </style>
 </head>
 <body>
@@ -894,6 +903,36 @@ let ready=false;
 let db=null, uid=null, profRef=null, qCol=null, mode="loading";
 let tab="plan", session=null, timerId=null;
 let ui = {secs:["smart"], mode:"focus", len:10, timed:false, diff:"any", genSec:"english", genTopic:"", addSec:"english", flash:""};
+/* Remember practice settings between visits (this browser only). */
+const UKEY="actlab.ui", UI_KEEP=["secs","mode","len","timed","diff","stemMode","genSec","genDiff"];
+try{ const s=JSON.parse(localStorage.getItem(UKEY)||"null"); if(s) UI_KEEP.forEach(k=>{ if(k in s) ui[k]=s[k]; }); }catch(e){}
+if(!Array.isArray(ui.secs)||!["smart","mixed"].concat(SECS).includes(ui.secs[0])) ui.secs=["smart"];
+if(![5,10,20,0].includes(ui.len)) ui.len=10;
+if(!["any","easy","medium","hard"].includes(ui.diff)) ui.diff="any";
+if(!SECS.includes(ui.genSec)) ui.genSec="english";
+ui.timed=!!ui.timed;
+function saveUI(){ try{ const o={}; UI_KEEP.forEach(k=>o[k]=ui[k]); localStorage.setItem(UKEY,JSON.stringify(o)); }catch(e){} }
+/* Keep the session you're in if the page reloads or the phone closes the tab. */
+const SKEY="actlab.session";
+function saveSession(){
+  try{
+    if(!session){ localStorage.removeItem(SKEY); return; }
+    localStorage.setItem(SKEY, JSON.stringify(Object.assign({}, session, {ans:session.ans.map(a=>Object.assign({},a,{q:undefined})), saved:Date.now()})));
+  }catch(e){}
+}
+function loadSession(){
+  try{
+    const s=JSON.parse(localStorage.getItem(SKEY)||"null");
+    if(!s||!Array.isArray(s.qs)||!s.qs.length||Date.now()-(s.saved||0)>36*3600e3) return null;
+    const live=new Map(BUILTIN.concat(P.gen||[],CUSTOM).map(q=>[q.id,q]));
+    s.qs=s.qs.map(q=>live.get(q.id)||q);
+    s.ans=(s.ans||[]).map((a,k)=>Object.assign(a,{q:s.qs[k]}));
+    if(!s.done&&s.i>=s.qs.length) return null;
+    s.elim=s.elim||[];
+    return s;
+  }catch(e){ return null; }
+}
+function resumeSession(){ const s=loadSession(); if(s){ session=s; tab=s.home||"practice"; if(!s.done) setTimeout(()=>toast("↩️","Picked up where you left off",s.label),300); } }
 
 /* Each user's bank: starting questions they haven't solved + replacements made for them + their own added questions */
 const bank = ()=> BUILTIN.filter(q=>!(P.retired&&P.retired[q.id])).concat(P.gen||[], CUSTOM);
@@ -1367,7 +1406,7 @@ async function init(){
       if(d&&u){ uid=await u.id(); if(uid){ db=d; ok=true; } }
     }
   }catch(e){}
-  if(!ok){ mode="local"; localLoad(); pruneGen(); fixCoins(); showCoins(); setNote("Saving in this browser only"); render(); return; }
+  if(!ok){ mode="local"; localLoad(); pruneGen(); fixCoins(); showCoins(); setNote("Saving in this browser only"); resumeSession(); render(); return; }
   mode="db"; setNote("Loading your data…");
   profRef=db.doc("data/users/"+uid+"/profile");
   qCol=profRef.collection("questions");
@@ -1491,6 +1530,8 @@ function fmtTime(s){const neg=s<0;s=Math.abs(s);return (neg?"−":"")+Math.floor
 const V=document.getElementById("view");
 function render(){
   clearInterval(timerId);
+  if(V.classList) V.classList.remove("wide");
+  saveUI(); saveSession();
   if(typeof location!=="undefined"&&location.hash==="#check"){ renderCheckReport(); return; }
   document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
   if(tab==="plan") renderPlan();
@@ -1628,12 +1669,17 @@ function renderQuestion(){
   const q=session.qs[session.i], pass=passageOf(q), answered=session.picked!=null;
   const lv=levelOf(q);
   let h=`<div class="card"><div class="row"><span class="mute small">${esc(session.label)} · ${session.i+1} of ${session.qs.length} · ${q.s!==session.qs[0].s||session.label.startsWith("Mixed")||session.label.startsWith("Smart")||session.home==="stem"?esc(BP[q.s].name)+" · ":""}<span class="lvl lvl-${lv}">${LEVELS[lv]}</span></span>${session.timed?`<span id="timer" class="timer"></span>`:""}<button class="linkbtn" data-act="quit">End</button></div>`;
-  if(pass) h+=`<details ${q.s!=="english"||!answered?"open":""}><summary>Passage</summary><div class="passage">${rich(pass)}</div></details>`;
-  h+=`<div class="q">${rich(q.q)}</div>`;
+  if(V.classList) V.classList.toggle("wide",!!pass);
+  if(pass) h+=`<div class="qgrid"><div class="pcol"><details ${q.s!=="english"||!answered?"open":""}><summary>Passage</summary><div class="passage${session.pfull?" full":""}">${rich(pass)}</div>
+    <div class="prow"><button class="linkbtn" data-act="pfull">${session.pfull?"Shrink passage":"Expand passage"}</button>${session.pfull?`<button class="linkbtn" data-act="jumpq">Jump to question ↓</button>`:""}</div></details></div><div class="qcol">`;
+  h+=`<div class="q" id="qtext">${rich(q.q)}</div>`;
+  const elim=session.elim||[];
   q.c.forEach((c,i)=>{
     let cls=""; if(answered){ if(i===q.a) cls="ok"; else if(i===session.picked) cls="bad"; }
-    h+=`<button class="choice ${cls}" data-pick="${i}" ${answered?"disabled":""}><b>${L[i]}</b><span>${rich(c).replace(/^<p>|<\/p>$/g,"")}</span></button>`;
+    const out=!answered&&elim.includes(i);
+    h+=`<div class="crow"><button class="choice ${cls}${out?" out":""}" data-pick="${i}" ${answered?"disabled":""}><b>${L[i]}</b><span>${rich(c).replace(/^<p>|<\/p>$/g,"")}</span></button>${answered?"":`<button class="elim${out?" on":""}" data-elim="${i}" aria-pressed="${out}" aria-label="${out?"Bring back":"Cross out"} choice ${L[i]}" title="${out?"Bring back":"Cross out"} this choice">${out?"↺":"✕"}</button>`}</div>`;
   });
+  if(!answered&&session.i===0) h+=`<p class="mute small kbd">Tip: press A–D to answer and Enter for the next question. Tap ✕ to cross out a choice.</p>`;
   if(answered){
     const right=session.picked===q.a;
     const last=session.ans[session.ans.length-1], g=last.gain, nb=nextBonusAt(P.streak);
@@ -1651,8 +1697,10 @@ function renderQuestion(){
     h+=`<div class="expl"><b>${right?"Correct!":"Not quite — you picked "+L[session.picked]+", but the answer is "+L[q.a]+"."}</b> ${body}<div style="margin-top:6px"><span class="tag">${esc(topicName(q.s,q.t))}</span>${q.origin==="official"?` <span class="tag">Official${q.testDate?" · "+esc(q.testDate):""}</span>`:""}</div></div>
     <button class="btn" data-act="next">${session.i+1<session.qs.length?"Next":"See results"}</button>`;
   }
+  if(pass) h+=`</div></div>`;
   h+=`</div>`;
   V.innerHTML=h;
+  saveSession();
   if(session.timed){const tick=()=>{const el=document.getElementById("timer");if(!el)return;const s=Math.round((session.end-Date.now())/1000);el.textContent=s>=0?fmtTime(s):"Time's up "+fmtTime(-s);el.classList.toggle("late",s<0);};tick();timerId=setInterval(tick,1000);}
 }
 /* Detailed explanations for wrong answers */
@@ -1690,9 +1738,14 @@ function answer(i){
   session.ans.push({q,right,gain,bonus,pick:i,note});
   checkBadges(true);
   saveProfile(); renderQuestion(); showCoins(gain);
+  try{
+    const ex=document.querySelector(".expl");
+    if(ex&&ex.getBoundingClientRect().top>window.innerHeight*0.55)
+      ex.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
+  }catch(e){}
 }
 function next(){
-  session.picked=null; session.i++;
+  session.picked=null; session.elim=[]; session.i++;
   if(session.i>=session.qs.length){
     session.done=true;
     const r=session.ans.filter(a=>a.right).length;
@@ -1707,7 +1760,8 @@ function renderSummary(){
   let h=`<div class="card"><h2>${esc(session.label)} results</h2><div class="big">${r} / ${n}</div><p class="mute">${n?pct(r/n):""} correct${session.timed?" · finished "+(Date.now()>session.end?"over":"within")+" ACT time":""}</p>
   <div class="coinline" style="font-size:18px"><span class="coin">$</span>+${session.coins||0} coins this session</div>`;
   Object.values(by).sort((a,b)=>a.r/a.n-b.r/b.n).forEach(x=>{h+=`<div class="topic"><div class="row"><span>${esc(topicName(x.s,x.t))}</span><span>${x.r}/${x.n}</span></div><div class="bar"><i style="width:${x.r/x.n*100}%;background:${x.r===x.n?"var(--ok)":x.r?"var(--acc)":"var(--bad)"}"></i></div></div>`;});
-  h+=`<div style="display:grid;gap:8px;margin-top:10px"><button class="btn" data-act="again">Practice again</button><button class="btn ghost" data-act="done">Back to setup</button></div></div>`;
+  const nMiss=session.ans.filter(a=>!a.right).length;
+  h+=`<div style="display:grid;gap:8px;margin-top:10px">${nMiss?`<button class="btn" data-act="redo">Redo the ${nMiss} I missed</button>`:""}<button class="btn${nMiss?" ghost":""}" data-act="again">Practice again</button><button class="btn ghost" data-act="done">Back to setup</button></div></div>`;
   const missed=session.ans.filter(a=>!a.right);
   if(missed.length){h+=`<div class="card"><h2>Review what you missed</h2>`;missed.forEach(a=>{h+=`<div class="qitem">${rich(a.q.q)}<div><b>Answer ${L[a.q.a]}:</b> ${rich(a.q.c[a.q.a]).replace(/^<p>|<\/p>$/g,"")}</div><div class="mute small">${esc(longExpl(a.q,a.pick)||a.q.x||"")}</div></div>`;});h+=`</div>`;}
   V.innerHTML=h;
@@ -1808,11 +1862,24 @@ function renderProgress(){
      <div class="row"><span>Questions in your bank now</span><b>${active}</b></div>
      <div class="row"><span>New questions made for you</span><b>${made}</b></div>
      <div class="row"><span>Starting questions you've solved</span><b>${solved}</b></div>
-     ${solved||made?`<div style="margin-top:10px"><button class="linkbtn danger" data-act="restorebank" id="restoreBtn">Restore the 200 starting questions</button><p class="mute small">Brings back every starting question and removes the generated ones. Scores, coins and your own added questions stay.</p></div>`:""}</div>`;
+     ${solved||made?`<div style="margin-top:10px"><button class="linkbtn danger" data-act="restorebank" id="restoreBtn">Restore the ${BUILTIN.length} starting questions</button><p class="mute small">Brings back every starting question and removes the generated ones. Scores, coins and your own added questions stay.</p></div>`:""}</div>`;
   }
   if(any) h+=`<div class="card"><button class="linkbtn danger" data-act="reset" id="resetBtn">Reset my progress</button><p class="mute small">Clears scores, coins, answer badges and history. Your saved questions, store items and daily streak stay.</p></div>`;
+  h+=`<div class="card"><h2>Back up or move your progress</h2>
+   <p class="mute small">Your coins, scores, store items and question bank live in this browser. Copy a backup code to keep them safe, or paste it on another device (like your phone) to move everything there.</p>
+   <button class="btn ghost" data-act="backup">Copy backup code</button>
+   ${ui.backupCode?`<label for="bkOut">Your backup code</label><textarea id="bkOut" readonly rows="3">${esc(ui.backupCode)}</textarea>`:""}
+   <label for="bkIn">Restore from a backup code</label><textarea id="bkIn" rows="3" placeholder="Paste a backup code here">${esc(ui.restoreText||"")}</textarea>
+   <div style="margin-top:10px"><button class="btn ghost" data-act="restorecode" id="restoreCodeBtn">Restore</button></div>
+   <div class="mute small" id="bkMsg" style="margin-top:6px">${esc(ui.bkMsg||"")}</div></div>`;
+  ui.bkMsg="";
   h+=`<p class="mute small">${mode==="db"?"Your progress and questions are saved to your account and private to you.":"Progress is saved in this browser only."}</p>`;
   V.innerHTML=h;
+}
+function backupCode(){ return "ACTLAB1:"+btoa(unescape(encodeURIComponent(JSON.stringify({v:1,at:Date.now(),p:P,c:CUSTOM})))); }
+function readBackup(code){
+  const m=String(code||"").replace(/\s+/g,"").match(/^ACTLAB1:([A-Za-z0-9+/=]+)$/); if(!m) return null;
+  try{ const o=JSON.parse(decodeURIComponent(escape(atob(m[1])))); return o&&o.p&&typeof o.p==="object"&&typeof o.p.stats==="object"?o:null; }catch(e){ return null; }
 }
 
 /* ---------- Question generation (asks Claude) ---------- */
@@ -1872,6 +1939,7 @@ V.addEventListener("click",e=>{
   else if(d.gsec){ui.genSec=d.gsec;ui.genTopic="";render();}
   else if(d.asec){ui.addSec=d.asec;render();}
   else if(d.pick!=null){answer(+d.pick);}
+  else if(d.elim!=null){ const i=+d.elim, el=session.elim||[]; session.elim=el.includes(i)?el.filter(x=>x!==i):el.concat(i); renderQuestion(); }
   else if(d.buy){
     if(buyArmed!==d.buy){buyArmed=d.buy;render();return;}
     buyArmed=null;
@@ -1897,17 +1965,51 @@ V.addEventListener("click",e=>{
       case "stemstart": startSession("stem"); break;
       case "again": {const k=session&&session.home==="stem"?"stem":ui.secs[0]; session=null; startSession(k);} break;
       case "done": session=null; render(); break;
+      case "redo": {
+        const m=session.ans.filter(a=>!a.right).map(a=>a.q); if(!m.length) break;
+        session={qs:m,i:0,ans:[],picked:null,elim:[],timed:false,end:0,label:session.label.replace(/ · Missed$/,"")+" · Missed",home:session.home||"practice"};
+        tab=session.home; render(); window.scrollTo(0,0); } break;
+      case "pfull": session.pfull=!session.pfull; renderQuestion(); break;
+      case "jumpq": { const el=document.getElementById("qtext"); if(el&&el.scrollIntoView) el.scrollIntoView({block:"start"}); } break;
+      case "backup": {
+        ui.backupCode=backupCode();
+        const done=ok=>{ ui.bkMsg=ok?"Copied! Paste it somewhere safe, like a note or a message to yourself.":"Select the code above and copy it."; render(); };
+        try{ navigator.clipboard.writeText(ui.backupCode).then(()=>done(true),()=>done(false)); }catch(e){ done(false); }
+      } break;
+      case "restorecode": {
+        const box=document.getElementById("bkIn"); ui.restoreText=box?box.value:ui.restoreText;
+        const o=readBackup(ui.restoreText);
+        if(!o){ restoreArmed=false; ui.bkMsg="That doesn't look like a backup code. Copy the whole code, starting with ACTLAB1:"; render(); break; }
+        if(restoreArmed!=="code"){ restoreArmed="code"; b.textContent="Tap again to replace this browser's progress"; break; }
+        restoreArmed=false;
+        P=Object.assign({stats:{},seen:{},sessions:[]},o.p); CUSTOM=Array.isArray(o.c)?o.c:[];
+        session=null; ui.restoreText=""; ui.backupCode=""; pruneGen(); fixCoins(); saveProfile(); applyLook(); showCoins(); render();
+        toast("✅","Progress restored","Backup from "+new Date(o.at||Date.now()).toLocaleDateString()); } break;
       case "gen": generate(); break;
       case "save": saveOfficial(); break;
       case "reset":
         if(!resetArmed){resetArmed=true;b.textContent="Tap again to clear all scores";return;}
         resetArmed=false; P={stats:{},seen:{},sessions:[],coins:0,streak:0,best:0,badges:{},owned:P.owned,look:P.look,lastDay:P.lastDay,dayStreak:P.dayStreak,bestDay:P.bestDay,days:P.days,retired:P.retired,gen:P.gen}; checkBadges(false); saveProfile(); showCoins(); render(); break;
       case "restorebank":
-        if(!restoreArmed){restoreArmed=true;b.textContent="Tap again to restore the starting questions";return;}
-        restoreArmed=false; P.retired={}; P.gen=[]; saveProfile(); render(); toast("📚","Starting questions restored","All 200 are back in your bank"); break;
+        if(restoreArmed!==true){restoreArmed=true;b.textContent="Tap again to restore the starting questions";return;}
+        restoreArmed=false; P.retired={}; P.gen=[]; saveProfile(); render(); toast("📚","Starting questions restored","All "+BUILTIN.length+" are back in your bank"); break;
     }
   }
 });
+/* Keyboard shortcuts: A-D or 1-4 to answer, Enter / N / → for the next question. */
+document.addEventListener("keydown",e=>{
+  if(e.ctrlKey||e.metaKey||e.altKey) return;
+  const t=e.target; if(t&&/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+  if(!session||session.done||tab!==session.home) return;
+  if(typeof location!=="undefined"&&location.hash==="#check") return;
+  const k=String(e.key||"").toLowerCase(), map={a:0,b:1,c:2,d:3,"1":0,"2":1,"3":2,"4":3};
+  if(session.picked==null&&k in map){ e.preventDefault(); answer(map[k]); }
+  else if(session.picked!=null&&(k==="enter"||k==="n"||k==="arrowright")){
+    if(k==="enter"&&t&&t.tagName==="BUTTON") return;   // the focused button handles Enter itself
+    e.preventDefault(); next();
+  }
+});
+V.addEventListener("input",e=>{ if(e.target.id==="bkIn") ui.restoreText=e.target.value; });
 V.addEventListener("change",e=>{
   if(e.target.id==="gt") ui.genTopic=e.target.value;
   if(e.target.id==="pName"){const v=e.target.value.trim().slice(0,24); if(v!==P.look.name){P.look.name=v; saveProfile();}}
