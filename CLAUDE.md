@@ -23,9 +23,17 @@ publishing it as a public website.
 - **Coins:** +10 correct, +1 per attempt; streak bonus every 3 in a row that doubles
   (5, 10, 20 … capped at 640).
 - **Daily streak:** counts consecutive local days the app was opened.
-- 65 built-in ORIGINAL questions (`BUILTIN`, passages in `PASS`). Never add real ACT test
+- **STEM tab:** Math + Science practice (the enhanced ACT's STEM score), weak spots or full mix.
+- 200 built-in ORIGINAL questions, 50 per section (`BUILTIN`, passages in `PASS`). English is
+  passage-based (essays with [[underlined]] portions, NO CHANGE first). Never add real ACT test
   questions to the built-in bank. They're copyrighted; users may add their own copies only to
   their own private bank.
+- **Solved questions are replaced (per user):** a correct answer retires the question (`P.retired`);
+  Math/Science get a new template question (`MATH_T`, `SCI_T`, stored in `P.gen`); English/Reading
+  come back when fewer than `REFILL_AT` remain. `AI_ENDPOINT` (empty) is the hook for a future
+  server that writes questions. Never put an API key in the page.
+- **ACT-style checker (`actCheck`):** every generated/AI question must pass it; built-ins were
+  screened with it. Open `index.html#check` for a report of the whole bank.
 
 ## Things that only worked inside claude.ai (must be replaced here)
 1. **`claude.use("db")` / `claude.use("user")`:** cloud saving of the profile
